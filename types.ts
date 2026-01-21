@@ -17,12 +17,16 @@ export interface Slide {
   visualPrompt: string;
   imageUri?: string;
   layout: LayoutType;
-  overlayOpacity?: number;
-  // Millimeter-level control overrides
-  headlineSize?: number; // In px or relative units
-  bodySize?: number;
-  textAlign?: TextAlign;
-  contentPadding?: number;
+  overlayOpacity: number;
+  headlineSize: number;
+  bodySize: number;
+  textAlign: TextAlign;
+  contentPadding: number;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
 }
 
 export interface CarouselConfig {

@@ -6,9 +6,9 @@ import {
   Type as TypeIcon, Cpu, Loader2, Zap, Camera, Upload, X, 
   CheckCircle2, Share2, Sun, Moon, Maximize2, FileJson, 
   MousePointer2, Layout as LayoutIcon, AlignLeft, AlignCenter, AlignRight,
-  Globe, Building2
+  Globe, Building2, Send, RotateCw, Copy, Check
 } from 'lucide-react';
-import { CarouselConfig, Slide, GenerationState, LayoutType, TextAlign } from './types';
+import { CarouselConfig, Slide, GenerationState, LayoutType, TextAlign, ChatMessage } from './types';
 import { generateCarouselContent, generateSlideImage } from './geminiService';
 import JSZip from 'jszip';
 import * as htmlToImage from 'html-to-image';
@@ -18,7 +18,7 @@ import * as htmlToImage from 'html-to-image';
 const Button: React.FC<{ 
   onClick?: () => void; 
   children: React.ReactNode; 
-  variant?: 'primary' | 'glass' | 'danger' | 'white';
+  variant?: 'primary' | 'glass' | 'danger' | 'white' | 'ghost';
   active?: boolean; 
   className?: string;
   disabled?: boolean;
@@ -28,6 +28,7 @@ const Button: React.FC<{
   const styles = {
     primary: "bg-teal-500 text-white neon-glow hover:bg-teal-400 disabled:opacity-50 shadow-lg",
     white: "bg-white text-slate-900 shadow-xl hover:bg-slate-50 disabled:opacity-50",
+    ghost: "text-slate-500 hover:text-white hover:bg-white/5",
     glass: active 
       ? "bg-teal-500/20 text-teal-400 border border-teal-500/50" 
       : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 dark:bg-slate-900/40",
@@ -49,8 +50,6 @@ const SlidePreview: React.FC<{
 }> = ({ slide, config, exportMode }) => {
   const isVertical = config.aspectRatio === '4:5';
   const accent = config.accentColor;
-  
-  // Dynamic scale factor for font sizes if export mode is high res
   const scale = exportMode ? 2 : 1;
   const headlineSize = (slide.headlineSize || 60) * scale;
   const bodySize = (slide.bodySize || 20) * scale;
@@ -63,29 +62,19 @@ const SlidePreview: React.FC<{
       className={`relative overflow-hidden flex flex-col group
         ${exportMode ? (isVertical ? 'w-[1080px] h-[1350px]' : 'w-[1080px] h-[1080px]') : (isVertical ? 'h-[600px] aspect-[4/5]' : 'h-[600px] aspect-square')}
         ${!exportMode ? 'rounded-[2.5rem] slide-canvas' : ''}`}
-      style={{ 
-        backgroundColor: '#0f172a', 
-        fontFamily: config.fontFamily,
-        padding: `${padding}px`
-      }}
+      style={{ backgroundColor: '#0f172a', fontFamily: config.fontFamily }}
     >
-      {/* Visual Content */}
       {slide.imageUri ? (
         <img src={slide.imageUri} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Background" crossOrigin="anonymous" />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-black" />
       )}
       
-      {/* Overlays */}
       <div 
         className="absolute inset-0"
-        style={{ 
-          background: `linear-gradient(to bottom, transparent 20%, rgba(0,0,0,${slide.overlayOpacity || 0.8}) 100%)`,
-          mixBlendMode: 'multiply'
-        }}
+        style={{ background: `linear-gradient(to bottom, transparent 20%, rgba(0,0,0,${slide.overlayOpacity || 0.8}) 100%)`, mixBlendMode: 'multiply' }}
       />
 
-      {/* Dynamic Branding Layer */}
       {config.branding.showBranding && (
         <div className="absolute top-10 left-12 flex items-center gap-3 z-20">
           <div className="w-12 h-12 rounded-2xl bg-teal-500 flex items-center justify-center shadow-2xl neon-glow overflow-hidden">
@@ -97,16 +86,15 @@ const SlidePreview: React.FC<{
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] font-black tracking-[0.4em] text-white/40 uppercase leading-none">
-              {config.branding.companyWebsite || "Creative Lab"}
+              {config.branding.companyWebsite}
             </span>
             <span className="text-xl font-black tracking-tighter text-white">
-              {config.branding.companyName || "CarouselFuzz"}
+              {config.branding.companyName}
             </span>
           </div>
         </div>
       )}
 
-      {/* Dynamic Layout Engine */}
       <div className={`absolute inset-0 flex flex-col z-20 transition-all duration-500`}
            style={{ padding: `${padding}px` }}>
         <div className={`h-full flex flex-col 
@@ -116,11 +104,8 @@ const SlidePreview: React.FC<{
             slide.layout === 'bold-title' ? 'justify-center items-start' : 'justify-start pt-24'}`}
           style={{ textAlign: textAlign }}
         >
-          <div className={`space-y-6 w-full drop-shadow-2xl`}>
-            <h1 
-              className="font-black leading-[1.05] tracking-tight uppercase italic"
-              style={{ fontSize: `${headlineSize}px` }}
-            >
+          <div className="space-y-6 w-full drop-shadow-2xl">
+            <h1 className="font-black leading-[1.05] tracking-tight uppercase italic" style={{ fontSize: `${headlineSize}px` }}>
               {slide.headline.split('{').map((part, i) => {
                 if (part.includes('}')) {
                   const [hl, rest] = part.split('}');
@@ -129,10 +114,7 @@ const SlidePreview: React.FC<{
                 return part;
               })}
             </h1>
-            <p 
-              className="text-slate-200/90 font-medium leading-relaxed"
-              style={{ fontSize: `${bodySize}px` }}
-            >
+            <p className="text-slate-200/90 font-medium leading-relaxed" style={{ fontSize: `${bodySize}px` }}>
               {slide.body.split('{').map((part, i) => {
                 if (part.includes('}')) {
                   const [hl, rest] = part.split('}');
@@ -145,13 +127,9 @@ const SlidePreview: React.FC<{
         </div>
       </div>
 
-      {/* Decorative Elements */}
       <div className="absolute bottom-10 right-12 flex flex-col items-end z-20">
         <div className="text-4xl font-black italic tracking-tighter text-white/20">0{config.slides.indexOf(slide) + 1}</div>
-        <div className="w-12 h-1 bg-teal-500 mt-2 rounded-full" style={{ 
-          width: `${((config.slides.indexOf(slide) + 1) / config.slides.length) * 100}%`,
-          backgroundColor: accent
-        }} />
+        <div className="w-12 h-1 bg-teal-500 mt-2 rounded-full" style={{ width: `${((config.slides.indexOf(slide) + 1) / config.slides.length) * 100}%`, backgroundColor: accent }} />
       </div>
     </div>
   );
@@ -186,8 +164,9 @@ export default function App() {
   });
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [topic, setTopic] = useState('');
   const [isAgentOpen, setIsAgentOpen] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [currentPrompt, setCurrentPrompt] = useState('');
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [genState, setGenState] = useState<GenerationState>({
@@ -198,31 +177,37 @@ export default function App() {
 
   const mainRef = useRef<HTMLElement>(null);
   const brandIconRef = useRef<HTMLInputElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Apply Theme to Document Body
   useEffect(() => {
     document.documentElement.className = config.theme === 'light' ? 'theme-white' : '';
   }, [config.theme]);
 
-  // Actions
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
+  const handleApplyStyleToAll = (field: keyof Slide) => {
+    const value = config.slides[currentIdx][field];
+    const newSlides = config.slides.map(s => ({ ...s, [field]: value }));
+    setConfig({ ...config, slides: newSlides });
+  };
+
   const handleGenerate = async () => {
-    if (!topic) return;
+    if (!currentPrompt) return;
+    const newHistory: ChatMessage[] = [...chatHistory, { role: 'user', text: currentPrompt }];
+    setChatHistory(newHistory);
+    setCurrentPrompt('');
     setGenState(p => ({ ...p, isGeneratingContent: true }));
+    
     try {
-      const result = await generateCarouselContent(topic, imageBase64 || undefined);
-      // Initialize layout props for new slides
-      result.slides = result.slides.map(s => ({
-        ...s,
-        headlineSize: 60,
-        bodySize: 20,
-        textAlign: s.layout === 'center' ? 'center' : 'left',
-        contentPadding: 64
-      }));
+      const result = await generateCarouselContent(currentPrompt, newHistory, imageBase64 || undefined);
       setConfig(prev => ({ ...prev, ...result }));
+      setChatHistory(prev => [...prev, { role: 'model', text: "Carousel architected successfully based on your request. Use the editor to refine." }]);
       setCurrentIdx(0);
       setIsAgentOpen(false);
     } catch (e) {
-      alert("Error generating masterpiece. Check API Key.");
+      setChatHistory(prev => [...prev, { role: 'model', text: "Architectural error. Please check your API access." }]);
     } finally {
       setGenState(p => ({ ...p, isGeneratingContent: false }));
     }
@@ -236,7 +221,7 @@ export default function App() {
         const uri = await generateSlideImage(slides[i].visualPrompt, config.aspectRatio);
         slides[i] = { ...slides[i], imageUri: uri };
         setConfig(prev => ({ ...prev, slides: [...slides] }));
-        setGenState(p => ({ ...p, progress: Math.round(((i + 1) / slides.length) * 100) }));
+        setGenState(prev => ({ ...prev, progress: Math.round(((i + 1) / slides.length) * 100) }));
       } catch (e) { console.error(e); }
     }
     setGenState(p => ({ ...p, isGeneratingImages: false }));
@@ -245,8 +230,7 @@ export default function App() {
   const handleExport = async () => {
     setIsExporting(true);
     const zip = new JSZip();
-    const folder = zip.folder("carousel-pack");
-
+    const folder = zip.folder("carousel-fuzz-pro-pack");
     try {
       for (let i = 0; i < config.slides.length; i++) {
         setCurrentIdx(i);
@@ -258,27 +242,19 @@ export default function App() {
         }
       }
       const blob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = URL.createObjectURL(blob);
       a.download = `${config.title.replace(/\s+/g, '-')}.zip`;
       a.click();
-    } catch (e) {
-      console.error(e);
-      alert("Export failed.");
-    } finally {
-      setIsExporting(false);
-    }
+    } catch (e) { alert("Export failed."); }
+    finally { setIsExporting(false); }
   };
 
   const handleBrandIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => setConfig(prev => ({ 
-        ...prev, 
-        branding: { ...prev.branding, iconUri: reader.result as string } 
-      }));
+      reader.onload = () => setConfig(prev => ({ ...prev, branding: { ...prev.branding, iconUri: reader.result as string } }));
       reader.readAsDataURL(file);
     }
   };
@@ -294,10 +270,10 @@ export default function App() {
   };
 
   return (
-    <div className={`flex h-screen ${config.theme === 'light' ? 'bg-[#f1f5f9]' : 'bg-[#030712]'} transition-all`}>
+    <div className={`flex h-screen ${config.theme === 'light' ? 'bg-[#f1f5f9]' : 'bg-[#030712]'} transition-all font-['Outfit']`}>
       
-      {/* Sidebar: Projects & Branding */}
-      <aside className="w-80 border-r border-white/5 flex flex-col p-6 glass overflow-y-auto">
+      {/* SIDEBAR */}
+      <aside className="w-80 border-r border-white/5 flex flex-col p-6 glass overflow-y-auto z-40">
         <div className="flex items-center gap-3 mb-10">
           <div className="w-10 h-10 rounded-2xl bg-teal-500 flex items-center justify-center neon-glow">
             <Cpu size={20} className="text-white" />
@@ -305,8 +281,7 @@ export default function App() {
           <h1 className="text-xl font-black uppercase tracking-tighter">CarouselFuzz</h1>
         </div>
 
-        <div className="space-y-8 flex-1 pr-2">
-          {/* Global Visuals */}
+        <div className="space-y-8 flex-1 pr-1">
           <section>
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4">Project Settings</h2>
             <div className="space-y-3">
@@ -318,74 +293,42 @@ export default function App() {
                  </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                 <Button active={config.aspectRatio === '4:5'} onClick={() => setConfig({...config, aspectRatio: '4:5'})} size="sm">4:5</Button>
-                 <Button active={config.aspectRatio === '1:1'} onClick={() => setConfig({...config, aspectRatio: '1:1'})} size="sm">1:1</Button>
+                 <Button active={config.aspectRatio === '4:5'} onClick={() => setConfig({...config, aspectRatio: '4:5'})} size="sm">4:5 PORTRAIT</Button>
+                 <Button active={config.aspectRatio === '1:1'} onClick={() => setConfig({...config, aspectRatio: '1:1'})} size="sm">1:1 SQUARE</Button>
               </div>
             </div>
           </section>
 
-          {/* Branding Section */}
           <section>
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 flex items-center gap-2">
                <Building2 size={12} /> Brand Identity
             </h2>
             <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/10">
-               <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-slate-400">Enable Branding</span>
-                  <input 
-                    type="checkbox" 
-                    checked={config.branding.showBranding} 
-                    onChange={e => updateBranding({ showBranding: e.target.checked })} 
-                    className="accent-teal-500"
-                  />
+               <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold text-slate-400">Show Branding</span>
+                  <input type="checkbox" checked={config.branding.showBranding} onChange={e => updateBranding({ showBranding: e.target.checked })} className="accent-teal-500" />
                </div>
-               <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">Company Name</label>
-                  <input 
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs font-bold"
-                    value={config.branding.companyName}
-                    onChange={e => updateBranding({ companyName: e.target.value })}
-                  />
-               </div>
-               <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">Website URL</label>
-                  <input 
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs font-bold"
-                    value={config.branding.companyWebsite}
-                    onChange={e => updateBranding({ companyWebsite: e.target.value })}
-                  />
-               </div>
-               <div className="pt-2">
-                  <Button size="sm" className="w-full" onClick={() => brandIconRef.current?.click()}>
-                    <Upload size={12} /> Change Icon
-                  </Button>
-                  <input type="file" ref={brandIconRef} className="hidden" accept="image/*" onChange={handleBrandIconUpload} />
-               </div>
+               <input placeholder="Company Name" className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs font-bold" value={config.branding.companyName} onChange={e => updateBranding({ companyName: e.target.value })} />
+               <input placeholder="Website" className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs font-bold" value={config.branding.companyWebsite} onChange={e => updateBranding({ companyWebsite: e.target.value })} />
+               <Button size="sm" className="w-full" onClick={() => brandIconRef.current?.click()}><Upload size={12} /> Icon</Button>
+               <input type="file" ref={brandIconRef} className="hidden" accept="image/*" onChange={handleBrandIconUpload} />
             </div>
           </section>
 
-          {/* Slides List */}
           <section className="flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Slides</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Slide Navigator</h2>
               <button onClick={() => {
-                const s: Slide = { id: Date.now().toString(), headline: 'New {Slide}', body: 'Edit content...', visualPrompt: 'Abstract', layout: 'center', headlineSize: 60, bodySize: 20, textAlign: 'center', contentPadding: 64 };
+                const s: Slide = { id: Date.now().toString(), headline: 'New {Slide}', body: 'Edit content...', visualPrompt: 'Abstract', layout: 'center', headlineSize: 60, bodySize: 20, textAlign: 'center', contentPadding: 64, overlayOpacity: 0.8 };
                 setConfig({...config, slides: [...config.slides, s]});
                 setCurrentIdx(config.slides.length);
               }} className="p-1 hover:text-teal-400"><Plus size={18} /></button>
             </div>
-            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
               {config.slides.map((s, idx) => (
-                <div key={s.id} onClick={() => setCurrentIdx(idx)} className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between group ${currentIdx === idx ? 'border-teal-500 bg-teal-500/10 text-teal-400' : 'border-white/5 bg-white/5 text-slate-500 hover:bg-white/10'}`}>
-                  <span className="text-[11px] font-bold truncate pr-4">Slide {idx+1}</span>
-                  <button onClick={e => {
-                    e.stopPropagation();
-                    if(config.slides.length > 1) {
-                      const slides = config.slides.filter((_, i) => i !== idx);
-                      setConfig({...config, slides});
-                      setCurrentIdx(0);
-                    }
-                  }} className="opacity-0 group-hover:opacity-100 hover:text-red-400"><Trash2 size={12} /></button>
+                <div key={s.id} onClick={() => setCurrentIdx(idx)} className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between group ${currentIdx === idx ? 'border-teal-500 bg-teal-500/10 text-teal-400 shadow-sm' : 'border-white/5 bg-white/5 text-slate-500 hover:bg-white/10'}`}>
+                  <span className="text-xs font-bold truncate pr-4">Slide {idx+1}</span>
+                  <button onClick={e => { e.stopPropagation(); if(config.slides.length > 1) { setConfig({...config, slides: config.slides.filter((_, i) => i !== idx)}); setCurrentIdx(0); } }} className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity"><Trash2 size={14} /></button>
                 </div>
               ))}
             </div>
@@ -394,15 +337,15 @@ export default function App() {
 
         <div className="pt-6 border-t border-white/5 flex gap-2">
            <Button onClick={() => setConfig({...config, theme: config.theme === 'dark' ? 'light' : 'dark'})} className="flex-1">
-             {config.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} Mode
+             {config.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} Theme
            </Button>
         </div>
       </aside>
 
-      {/* Main Studio Area */}
-      <main ref={mainRef} className="flex-1 flex flex-col relative overflow-hidden">
+      {/* MAIN VIEW */}
+      <main ref={mainRef} className="flex-1 flex flex-col relative overflow-hidden bg-[#070b14]">
         
-        {/* Top Header */}
+        {/* HEADER */}
         <header className="h-20 px-10 flex items-center justify-between border-b border-white/5 glass z-50">
           <div className="flex items-center gap-4">
              <div className="bg-white/5 px-4 py-2 rounded-2xl flex items-center gap-3">
@@ -413,7 +356,7 @@ export default function App() {
           
           <div className="flex items-center gap-3">
              <Button variant="glass" onClick={() => setIsAgentOpen(true)}>
-               <Sparkles size={18} className="text-teal-400" /> Magic Agent
+               <Sparkles size={18} className="text-teal-400" /> AI Architect
              </Button>
              <Button variant="glass" onClick={handleGenerateImages} disabled={genState.isGeneratingImages}>
                {genState.isGeneratingImages ? <Loader2 size={18} className="animate-spin" /> : <ImageIcon size={18} />} Build Art
@@ -425,117 +368,118 @@ export default function App() {
           </div>
         </header>
 
-        {/* Canvas & Editor */}
         <div className="flex-1 flex overflow-hidden">
           
-          {/* Canvas Wrapper */}
-          <div className="flex-1 p-16 flex flex-col items-center justify-center bg-black/10 relative">
-            <div className="absolute top-10 flex gap-4 bg-white/5 p-3 rounded-3xl border border-white/10 shadow-2xl z-50 backdrop-blur-xl">
+          {/* CANVAS AREA */}
+          <div className="flex-1 p-16 flex flex-col items-center justify-center relative overflow-auto pattern-grid">
+            <div className="absolute top-10 flex gap-4 bg-[#030712]/80 backdrop-blur-3xl p-3 rounded-full border border-white/10 shadow-2xl z-50">
                <button onClick={() => setCurrentIdx(p => Math.max(0, p-1))} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft /></button>
-               <span className="text-sm font-black self-center tracking-widest px-4 uppercase">Slide {currentIdx+1} / {config.slides.length}</span>
+               <span className="text-xs font-black self-center tracking-widest px-6 uppercase opacity-60">Slide {currentIdx+1} of {config.slides.length}</span>
                <button onClick={() => setCurrentIdx(p => Math.min(config.slides.length-1, p+1))} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronRight /></button>
             </div>
 
-            <div className="relative group p-6">
+            <div className="relative group p-6 animate-in zoom-in-95 duration-500">
               <SlidePreview slide={config.slides[currentIdx]} config={config} />
               
-              <div className="absolute -right-20 top-1/2 -translate-y-1/2 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-all">
-                 <button onClick={async () => {
-                   const uri = await generateSlideImage(config.slides[currentIdx].visualPrompt, config.aspectRatio);
-                   updateSlide({ imageUri: uri });
-                 }} className="w-12 h-12 bg-white/10 rounded-2xl border border-white/10 flex items-center justify-center hover:bg-teal-500 hover:text-white transition-all hover:scale-110 shadow-2xl">
-                   <Zap size={20} />
+              <div className="absolute -right-20 top-1/2 -translate-y-1/2 flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100">
+                 <button 
+                   onClick={async () => {
+                     const uri = await generateSlideImage(config.slides[currentIdx].visualPrompt, config.aspectRatio);
+                     updateSlide({ imageUri: uri });
+                   }} 
+                   className="w-14 h-14 bg-white/10 rounded-[1.5rem] border border-white/10 flex items-center justify-center hover:bg-teal-500 hover:text-white transition-all hover:scale-110 shadow-2xl backdrop-blur-xl"
+                   title="Regenerate this Image"
+                 >
+                   <RotateCw size={24} />
                  </button>
               </div>
             </div>
+
+            {(genState.isGeneratingImages || isExporting) && (
+              <div className="absolute bottom-10 flex flex-col items-center gap-4">
+                <div className="bg-teal-500 text-white px-8 py-4 rounded-3xl shadow-2xl neon-glow flex items-center gap-4 animate-bounce">
+                  <Loader2 size={24} className="animate-spin" />
+                  <span className="text-sm font-black tracking-widest uppercase">{isExporting ? 'Exporting hi-res pack...' : `Processing Assets: ${genState.progress}%`}</span>
+                </div>
+                <div className="w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-teal-400 transition-all duration-500" style={{ width: `${isExporting ? 100 : genState.progress}%` }} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right Precision Editor */}
-          <div className="w-[450px] border-l border-white/5 p-8 flex flex-col gap-8 glass overflow-y-auto">
-            {/* Typography Controls */}
+          {/* RIGHT EDITOR PANEL */}
+          <div className="w-[450px] border-l border-white/5 p-8 flex flex-col gap-10 glass overflow-y-auto">
+            
             <section className="space-y-6">
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
                 <TypeIcon size={14} /> Typography Precision
               </h2>
               
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <div className="flex justify-between items-baseline">
-                      <label className="text-[10px] font-bold text-slate-500">Headline size</label>
-                      <span className="text-[10px] font-mono text-teal-400">{config.slides[currentIdx].headlineSize}px</span>
+              <div className="space-y-6">
+                 {['headlineSize', 'bodySize', 'contentPadding'].map((field) => (
+                    <div key={field} className="space-y-3">
+                        <div className="flex justify-between items-end">
+                           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{field.replace(/([A-Z])/g, ' $1')}</label>
+                           <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-mono text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-md">{(config.slides[currentIdx] as any)[field]}px</span>
+                              <button 
+                                onClick={() => handleApplyStyleToAll(field as keyof Slide)}
+                                className="text-[10px] text-slate-500 hover:text-teal-400 flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md border border-white/10"
+                                title="Apply to all slides"
+                              >
+                                <Copy size={10} /> Sync All
+                              </button>
+                           </div>
+                        </div>
+                        <input 
+                          type="range" 
+                          min={field === 'bodySize' ? 12 : 20} 
+                          max={field === 'headlineSize' ? 150 : 150} 
+                          value={(config.slides[currentIdx] as any)[field]} 
+                          onChange={e => updateSlide({ [field]: parseInt(e.target.value) })}
+                          className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-teal-500" 
+                        />
                     </div>
-                    <input 
-                      type="range" min="30" max="120" step="1" 
-                      value={config.slides[currentIdx].headlineSize}
-                      onChange={e => updateSlide({ headlineSize: parseInt(e.target.value) })}
-                      className="w-full accent-teal-500"
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <div className="flex justify-between items-baseline">
-                      <label className="text-[10px] font-bold text-slate-500">Body size</label>
-                      <span className="text-[10px] font-mono text-teal-400">{config.slides[currentIdx].bodySize}px</span>
-                    </div>
-                    <input 
-                      type="range" min="12" max="40" step="1" 
-                      value={config.slides[currentIdx].bodySize}
-                      onChange={e => updateSlide({ bodySize: parseInt(e.target.value) })}
-                      className="w-full accent-teal-500"
-                    />
-                 </div>
-              </div>
+                 ))}
 
-              <div className="space-y-4">
-                 <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-bold text-slate-500">Alignment</label>
-                    <div className="flex gap-1">
+                 <div className="flex justify-between items-center py-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Alignment</label>
+                    <div className="flex gap-2">
                        {(['left', 'center', 'right'] as TextAlign[]).map(t => (
-                         <button 
-                            key={t}
-                            onClick={() => updateSlide({ textAlign: t })}
-                            className={`p-2 rounded-lg border transition-all ${config.slides[currentIdx].textAlign === t ? 'border-teal-500 bg-teal-500/10 text-teal-400' : 'border-white/5 bg-white/5 text-slate-500'}`}
-                         >
-                            {t === 'left' && <AlignLeft size={14} />}
-                            {t === 'center' && <AlignCenter size={14} />}
-                            {t === 'right' && <AlignRight size={14} />}
+                         <button key={t} onClick={() => updateSlide({ textAlign: t })} className={`p-2.5 rounded-xl border transition-all ${config.slides[currentIdx].textAlign === t ? 'border-teal-500 bg-teal-500 text-white shadow-lg' : 'border-white/10 bg-white/5 text-slate-500 hover:bg-white/10'}`}>
+                            {t === 'left' && <AlignLeft size={16} />}
+                            {t === 'center' && <AlignCenter size={16} />}
+                            {t === 'right' && <AlignRight size={16} />}
                          </button>
                        ))}
+                       <button onClick={() => handleApplyStyleToAll('textAlign')} className="ml-2 p-2.5 bg-white/5 rounded-xl border border-white/10 text-slate-500 hover:text-teal-400" title="Sync Alignment to All"><Copy size={16} /></button>
                     </div>
-                 </div>
-                 <div className="space-y-2">
-                    <div className="flex justify-between items-baseline">
-                      <label className="text-[10px] font-bold text-slate-500">Container Padding (mm-control)</label>
-                      <span className="text-[10px] font-mono text-teal-400">{config.slides[currentIdx].contentPadding}px</span>
-                    </div>
-                    <input 
-                      type="range" min="20" max="120" step="1" 
-                      value={config.slides[currentIdx].contentPadding}
-                      onChange={e => updateSlide({ contentPadding: parseInt(e.target.value) })}
-                      className="w-full accent-teal-500"
-                    />
                  </div>
               </div>
             </section>
 
-            {/* Content Editor */}
-            <section className="space-y-4">
+            <section className="space-y-6 pt-6 border-t border-white/5">
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-                <MousePointer2 size={14} /> Slide Content
+                <LayoutIcon size={14} /> Slide Content
               </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 mb-2 block">Headline (Use {'{text}'} for accent color)</label>
-                  <textarea className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm font-bold focus:border-teal-500/50 min-h-[80px] resize-none" value={config.slides[currentIdx].headline} onChange={e => updateSlide({ headline: e.target.value })} />
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Headline Text</label>
+                  <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm font-bold focus:border-teal-500/50 min-h-[90px] resize-none" value={config.slides[currentIdx].headline} onChange={e => updateSlide({ headline: e.target.value })} />
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 mb-2 block">Body Text</label>
-                  <textarea className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-xs font-medium focus:border-teal-500/50 min-h-[100px] resize-none text-slate-300" value={config.slides[currentIdx].body} onChange={e => updateSlide({ body: e.target.value })} />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Body Copy</label>
+                  <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs leading-relaxed focus:border-teal-500/50 min-h-[120px] resize-none text-slate-300" value={config.slides[currentIdx].body} onChange={e => updateSlide({ body: e.target.value })} />
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 mb-4 block uppercase tracking-widest">Layout Variant</label>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Layout Variant</label>
+                    <button onClick={() => handleApplyStyleToAll('layout')} className="text-[10px] text-slate-500 hover:text-teal-400 flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-md border border-white/10"><Copy size={10} /> Sync Layout</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
                     {['center', 'bottom-left', 'split-vertical', 'minimal', 'bold-title', 'comparison'].map(l => (
-                      <button key={l} onClick={() => updateSlide({ layout: l as LayoutType })} className={`p-2.5 rounded-xl border text-[9px] font-black uppercase tracking-tighter transition-all ${config.slides[currentIdx].layout === l ? 'bg-teal-500 border-teal-500 text-white shadow-lg' : 'border-white/10 bg-white/5 text-slate-500 hover:bg-white/10'}`}>
+                      <button key={l} onClick={() => updateSlide({ layout: l as LayoutType })} className={`px-4 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${config.slides[currentIdx].layout === l ? 'bg-teal-500 border-teal-500 text-white shadow-lg neon-glow' : 'border-white/5 bg-white/5 text-slate-500 hover:bg-white/10'}`}>
                         {l.replace('-', ' ')}
                       </button>
                     ))}
@@ -547,40 +491,95 @@ export default function App() {
         </div>
       </main>
 
-      {/* AI Strategist Modal */}
+      {/* AI ARCHITECT MODAL (CONVERSATIONAL) */}
       {isAgentOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-8">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl" onClick={() => !genState.isGeneratingContent && setIsAgentOpen(false)} />
-          <div className="relative w-full max-w-4xl bg-slate-900 rounded-[3rem] p-12 border border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-500/10 blur-[150px] -translate-y-1/2 translate-x-1/2" />
-            <div className="flex flex-col md:flex-row gap-12 relative z-10">
-              <div className="flex-1 space-y-8">
-                <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center shadow-2xl neon-glow">
-                    <Sparkles size={40} className="text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Strategy Architect</h2>
-                    <p className="text-slate-400 font-bold tracking-widest text-xs uppercase">WebJSON Analysis Active</p>
-                  </div>
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl animate-in fade-in" onClick={() => !genState.isGeneratingContent && setIsAgentOpen(false)} />
+          
+          <div className="relative w-full max-w-5xl h-[85vh] bg-[#0c111d] rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+            {/* Modal Header */}
+            <header className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center shadow-2xl neon-glow">
+                  <Sparkles size={32} className="text-white" />
                 </div>
-                <div className="space-y-4">
-                    <label className="text-xs font-black uppercase text-slate-500 tracking-widest">Describe your topic</label>
-                    <textarea 
-                      placeholder="e.g. The psychology of colors in SaaS landing pages..."
-                      className="w-full bg-black/40 border border-white/10 rounded-[2rem] p-8 text-xl font-bold focus:outline-none focus:border-teal-500 transition-all min-h-[200px] resize-none shadow-inner"
-                      value={topic}
-                      onChange={e => setTopic(e.target.value)}
-                    />
-                    <div className="flex gap-4">
-                      <Button variant="danger" className="flex-1 py-5" onClick={() => setIsAgentOpen(false)}>Abort</Button>
-                      <Button variant="primary" className="flex-[2] py-5" onClick={handleGenerate} disabled={!topic || genState.isGeneratingContent}>
-                        {genState.isGeneratingContent ? <Loader2 size={24} className="animate-spin" /> : <><Zap size={24} fill="currentColor" /> Generate Masterpiece</>}
-                      </Button>
-                    </div>
+                <div>
+                  <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">AI Architect <span className="text-teal-400 opacity-60">v3.0</span></h2>
+                  <p className="text-slate-500 font-bold tracking-widest text-[10px] uppercase">WebJSON Grounding & Vision Enabled</p>
                 </div>
               </div>
+              <button onClick={() => setIsAgentOpen(false)} className="p-3 bg-white/5 rounded-2xl border border-white/10 text-slate-400 hover:text-white transition-all"><X /></button>
+            </header>
+
+            {/* Chat Container */}
+            <div className="flex-1 overflow-y-auto p-10 space-y-6 flex flex-col">
+               {chatHistory.length === 0 ? (
+                 <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 opacity-40">
+                    <Layers size={64} className="text-teal-500" />
+                    <div className="max-w-md">
+                      <h3 className="text-xl font-bold text-white mb-2">Initialize Architectural Engine</h3>
+                      <p className="text-sm">Describe the topic, audience, and style. I will use real-time data to build your carousel.</p>
+                    </div>
+                 </div>
+               ) : (
+                 chatHistory.map((msg, i) => (
+                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] px-6 py-4 rounded-[1.5rem] text-sm leading-relaxed ${msg.role === 'user' ? 'bg-teal-600 text-white font-bold' : 'bg-white/5 border border-white/10 text-slate-300'}`}>
+                        {msg.text}
+                      </div>
+                   </div>
+                 ))
+               )}
+               <div ref={chatEndRef} />
             </div>
+
+            {/* Input Bar */}
+            <footer className="p-10 pt-2 border-t border-white/5 space-y-6">
+               <div className="flex items-center gap-4">
+                  <div className="relative flex-1">
+                    <textarea 
+                      placeholder="What should we architect? e.g. 5 rules for AI startups in 2025..."
+                      className="w-full bg-white/5 border border-white/10 rounded-[2.5rem] pl-8 pr-16 py-6 text-lg font-bold focus:outline-none focus:border-teal-500 transition-all min-h-[90px] max-h-[200px] resize-none"
+                      value={currentPrompt}
+                      onChange={e => setCurrentPrompt(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleGenerate())}
+                    />
+                    <button 
+                      onClick={handleGenerate}
+                      disabled={!currentPrompt || genState.isGeneratingContent}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 bg-teal-500 text-white rounded-full flex items-center justify-center shadow-lg neon-glow disabled:opacity-30 transition-all active:scale-90"
+                    >
+                      {genState.isGeneratingContent ? <Loader2 className="animate-spin" /> : <Send size={24} />}
+                    </button>
+                  </div>
+               </div>
+               
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
+                       <input type="file" id="vision- architect" className="hidden" onChange={e => {
+                          const f = e.target.files?.[0];
+                          if(f) { const r = new FileReader(); r.onload = () => setImageBase64(r.result as string); r.readAsDataURL(f); }
+                       }} />
+                       <button onClick={() => document.getElementById('vision- architect')?.click()} className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${imageBase64 ? 'text-teal-400' : 'text-slate-500 hover:text-white'}`}>
+                          {imageBase64 ? <CheckCircle2 size={16} /> : <Camera size={16} />}
+                          {imageBase64 ? 'Ref Analysis Ready' : 'Add Vision Ref'}
+                       </button>
+                       {imageBase64 && <button onClick={() => setImageBase64(null)} className="text-red-500"><X size={12} /></button>}
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                     <div className="flex items-center gap-2 opacity-30">
+                        <Check size={12} className="text-teal-400" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Web Grounding</span>
+                     </div>
+                     <div className="flex items-center gap-2 opacity-30">
+                        <Check size={12} className="text-teal-400" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Vision Logic</span>
+                     </div>
+                  </div>
+               </div>
+            </footer>
           </div>
         </div>
       )}
