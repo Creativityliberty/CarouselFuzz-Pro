@@ -6,29 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CarouselFuzz Pro - AI Social Media Architect</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
     <style>
         :root {
           --accent: #2dd4bf;
           --bg: #030712;
           --glass: rgba(15, 23, 42, 0.6);
+          --text: #f8fafc;
         }
 
         .theme-white {
           --bg: #f8fafc;
           --glass: rgba(255, 255, 255, 0.7);
+          --text: #0f172a;
         }
 
         body {
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
-            color: #f8fafc;
+            color: var(--text);
             overflow-x: hidden;
-            transition: background-color 0.4s ease;
-        }
-
-        .theme-white body {
-            color: #0f172a;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         .glass {
