@@ -1,5 +1,5 @@
 
-export type LayoutType = 'center' | 'bottom-left' | 'split-vertical' | 'minimal' | 'bold-title' | 'comparison';
+export type LayoutType = 'center' | 'bottom-left' | 'split-vertical' | 'minimal' | 'bold-title' | 'comparison' | 'custom-spec';
 export type ThemeMode = 'dark' | 'light';
 export type TextAlign = 'left' | 'center' | 'right';
 
@@ -8,6 +8,25 @@ export interface Branding {
   companyWebsite: string;
   iconUri?: string;
   showBranding: boolean;
+}
+
+export const DEFAULT_BRANDING: Branding = {
+  companyName: "Forge Studio",
+  companyWebsite: "forge.design",
+  showBranding: true
+};
+
+export interface DesignSpec {
+  id: string;
+  name: string;
+  fontFamily: string;
+  accentColor: string;
+  margins_mm: number;
+  headlineSize: number;
+  bodySize: number;
+  textAlign: TextAlign;
+  overlayOpacity: number;
+  vibe: string;
 }
 
 export interface Slide {
@@ -29,7 +48,13 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface GroundingSource {
+  title: string;
+  uri: string;
+}
+
 export interface CarouselConfig {
+  id: string;
   title: string;
   accentColor: string;
   fontFamily: string;
@@ -37,10 +62,21 @@ export interface CarouselConfig {
   theme: ThemeMode;
   branding: Branding;
   slides: Slide[];
+  customSpec?: DesignSpec;
+  groundingSources?: GroundingSource[];
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  updatedAt: number;
+  config: CarouselConfig;
+  chatHistory: ChatMessage[];
 }
 
 export interface GenerationState {
   isGeneratingContent: boolean;
   isGeneratingImages: boolean;
+  isAnalyzingDesign: boolean;
   progress: number;
 }
