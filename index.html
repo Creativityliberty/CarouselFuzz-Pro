@@ -5,74 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CarouselFuzz Pro - AI Social Media Architect</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
-    <style>
-        :root {
-          --accent: #2dd4bf;
-          --bg: #030712;
-          --glass: rgba(15, 23, 42, 0.6);
-          --text: #f8fafc;
-        }
-
-        .theme-white {
-          --bg: #f8fafc;
-          --glass: rgba(255, 255, 255, 0.7);
-          --text: #0f172a;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            overflow-x: hidden;
-            transition: background-color 0.4s ease, color 0.4s ease;
-        }
-
-        .glass {
-            background: var(--glass);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .theme-white .glass {
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .neon-glow {
-            box-shadow: 0 0 25px rgba(45, 212, 191, 0.35);
-        }
-
-        .slide-canvas {
-            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
-        }
-
-        .theme-white .slide-canvas {
-            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.1);
-        }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "jszip": "https://esm.sh/jszip@3.10.1",
-    "html-to-image": "https://esm.sh/html-to-image@1.11.11"
-  }
-}
-</script>
 </head>
-<body class="transition-colors duration-500">
+<body class="bg-slate-950 text-slate-50 transition-colors duration-500">
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

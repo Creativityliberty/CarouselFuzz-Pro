@@ -1,8 +1,11 @@
 {
   "name": "CarouselFuzz Pro",
-  "description": "An ultra-premium AI-powered social media carousel generator using the WebJSON technique to search, structure, and generate stunning visuals with Gemini.",
+  "description": "Premium AI social media architect with Design DNA capture.",
   "requestFramePermissions": [
     "camera",
     "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
