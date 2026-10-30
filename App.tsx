@@ -33,6 +33,7 @@ export default function App() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isPresenting, setIsPresenting] = useState(false);
   const [isArchitectFlow, setIsArchitectFlow] = useState(false);
   const [architectImages, setArchitectImages] = useState<string[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -45,6 +46,7 @@ export default function App() {
   });
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const exportRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   // Persistence
   useEffect(() => {
@@ -116,31 +118,40 @@ export default function App() {
   const handleExport = async () => {
     if (!currentProject) return;
     setIsExporting(true);
+    // Let the hidden 1080px previews render before capturing
+    await new Promise(r => setTimeout(r, 400));
     try {
       const zip = new JSZip();
-      const folder = zip.folder(`${currentProject.name.replace(/\s+/g, '_')}`);
-      const originalIdx = currentIdx;
-      
+      const folder = zip.folder(currentProject.name.replace(/\s+/g, '_'));
+
       for (let i = 0; i < currentProject.config.slides.length; i++) {
-        setCurrentIdx(i);
-        await new Promise(r => setTimeout(r, 800));
-        const el = document.getElementById(`capture-${currentProject.config.slides[i].id}`);
+        const el = exportRefs.current[i];
         if (el) {
-          const dataUrl = await htmlToImage.toPng(el, { quality: 1, pixelRatio: 2 });
-          folder?.file(`slide-${i+1}.png`, dataUrl.split(',')[1], { base64: true });
+          const dataUrl: string = await htmlToImage.toPng(el, {
+            quality: 1,
+            pixelRatio: 1,
+            width: 1080,
+            height: currentProject.config.aspectRatio === '4:5' ? 1350 : 1080,
+          });
+          folder?.file(`slide-${i + 1}.png`, dataUrl.split(',')[1], { base64: true });
         }
       }
-      
-      setCurrentIdx(originalIdx);
-      const blob = await zip.generateAsync({ type: 'blob' });
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
+      a.href = url;
       a.download = `${currentProject.name}_carousel.zip`;
+      document.body.appendChild(a);
       a.click();
-    } catch (e: any) { 
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
       console.error("Export failed:", e);
-    } finally { 
-      setIsExporting(false); 
+      alert(`Export failed: ${e?.message || e}`);
+    } finally {
+      setIsExporting(false);
+      exportRefs.current = [];
     }
   };
 
@@ -226,6 +237,9 @@ export default function App() {
              <Button variant="glass" onClick={handleBuildArt} disabled={genState.isGeneratingImages}>
                 {genState.isGeneratingImages ? <span className="flex items-center gap-2 text-teal-400"><Loader2 className="animate-spin" size={14} /> Generating {genState.progress}%</span> : <span className="flex items-center gap-2"><ImageIcon size={18} /> Build Visuals</span>}
              </Button>
+             <Button variant="glass" onClick={() => setIsPresenting(true)} disabled={currentProject.config.slides.length === 0}>
+                <Maximize2 size={18} /> Present
+             </Button>
              <Button variant="white" onClick={handleExport} disabled={isExporting}>
                 {isExporting ? <Loader2 className="animate-spin" /> : <Download size={18} />} Export Pack
              </Button>
@@ -251,7 +265,7 @@ export default function App() {
                 <button onClick={() => setCurrentIdx(p => Math.min(currentProject.config.slides.length-1, p+1))} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronRight /></button>
               </div>
 
-              <div className="animate-in zoom-in-95 duration-500 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] rounded-[2.5rem] overflow-hidden">
+              <div key={currentIdx} className="slide-enter shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] rounded-[2.5rem] overflow-hidden">
                 <SlidePreview slide={currentProject.config.slides[currentIdx]} config={currentProject.config} />
               </div>
            </div>
@@ -343,6 +357,43 @@ export default function App() {
         </div>
       )}
 
+      {/* Hidden 1080px export previews */}
+      {isExporting && currentProject && (
+        <div className="fixed top-0" style={{ left: -99999 }} aria-hidden="true">
+          {currentProject.config.slides.map((s, i) => (
+            <div key={s.id} ref={el => { exportRefs.current[i] = el; }}>
+              <SlidePreview slide={s} config={currentProject.config} exportMode />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Presentation Mode */}
+      {isPresenting && currentProject && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center"
+          onKeyDown={e => {
+            if (e.key === 'ArrowRight') setCurrentIdx(p => Math.min(currentProject.config.slides.length - 1, p + 1));
+            else if (e.key === 'ArrowLeft') setCurrentIdx(p => Math.max(0, p - 1));
+            else if (e.key === 'Escape') setIsPresenting(false);
+          }}
+          tabIndex={-1}
+          ref={el => el?.focus()}
+        >
+          <div key={currentIdx} className="slide-enter h-[85vh] aspect-[4/5] rounded-[2rem] overflow-hidden shadow-[0_60px_120px_-20px_rgba(0,0,0,0.9)]">
+            <div className="h-full" style={{ aspectRatio: currentProject.config.aspectRatio === '4:5' ? '4 / 5' : '1 / 1' }}>
+              <SlidePreview slide={currentProject.config.slides[currentIdx]} config={currentProject.config} />
+            </div>
+          </div>
+          <div className="flex items-center gap-8 mt-10 text-slate-400">
+            <button onClick={() => setCurrentIdx(p => Math.max(0, p - 1))} className="p-3 bg-white/5 rounded-full hover:bg-white/10"><ChevronLeft /></button>
+            <span className="text-xs font-black tracking-widest uppercase">{currentIdx + 1} / {currentProject.config.slides.length}</span>
+            <button onClick={() => setCurrentIdx(p => Math.min(currentProject.config.slides.length - 1, p + 1))} className="p-3 bg-white/5 rounded-full hover:bg-white/10"><ChevronRight /></button>
+            <button onClick={() => setIsPresenting(false)} className="p-3 bg-white/5 rounded-full hover:text-red-400"><X /></button>
+          </div>
+        </div>
+      )}
+
       {/* Agent Overlay */}
       {isAgentOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -372,7 +423,7 @@ export default function App() {
                        <p className="text-xs text-slate-500 max-w-xs mx-auto mt-1">Upload screenshots of designs you love and we'll reverse-engineer the style.</p>
                     </div>
                     <input type="file" multiple id="architect-upload" className="hidden" accept="image/*" onChange={e => {
-                        Array.from(e.target.files || []).forEach(f => {
+                        Array.from((e.target.files as FileList) || []).forEach(f => {
                           const r = new FileReader();
                           r.onload = () => setArchitectImages(p => [...p, r.result as string]);
                           r.readAsDataURL(f);
