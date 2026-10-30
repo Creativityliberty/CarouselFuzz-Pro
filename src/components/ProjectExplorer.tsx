@@ -1,7 +1,7 @@
 import React from 'react';
 import { Project } from '../../types';
 import { Button } from './CoreButton';
-import { Cpu, Zap, Layers, History, FileJson, Trash2, Grid, ArrowRight, Settings } from 'lucide-react';
+import { Cpu, Zap, Layers, History, FileJson, Trash2, Grid3x3, ArrowRight, Settings } from 'lucide-react';
 
 interface ProjectExplorerProps {
   projects: Project[];
@@ -13,14 +13,16 @@ interface ProjectExplorerProps {
 
 export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSelect, onDelete, onCreateNew, onOpenSettings }) => {
   return (
-    <div className="flex-1 min-h-screen p-10 md:p-20 flex flex-col overflow-y-auto bg-slate-950">
+    <div className="flex-1 min-h-screen p-10 md:p-20 flex flex-col overflow-y-auto bg-slate-950 relative overflow-hidden">
+      <div className="orb w-[500px] h-[500px] bg-teal-500/15 -top-40 -left-40" />
+      <div className="orb w-[400px] h-[400px] bg-indigo-500/10 top-1/3 right-0" style={{ animationDelay: "-7s" }} />
       <header className="flex flex-col md:flex-row items-center justify-between mb-20 gap-8">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 rounded-[1.5rem] bg-teal-500 flex items-center justify-center shadow-[0_0_30px_rgba(20,184,166,0.4)]">
             <Cpu size={32} className="text-white" />
           </div>
           <div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter text-white italic">Forge de Design</h1>
+            <h1 className="text-5xl font-black uppercase tracking-tighter italic"><span className="aurora-text">Forge</span> <span className="text-white">de Design</span></h1>
             <p className="text-slate-500 font-bold tracking-[0.3em] text-[10px] uppercase opacity-60">Architectural Content Engine v4.0</p>
           </div>
         </div>
@@ -49,13 +51,13 @@ export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSe
               <div 
                 key={p.id} 
                 onClick={() => onSelect(p)}
-                className="group bg-white/5 border border-white/10 rounded-[2.5rem] p-8 cursor-pointer hover:border-teal-500/50 hover:bg-teal-500/5 transition-all relative overflow-hidden"
+                className="group card-lift bg-white/5 border border-white/10 rounded-[2.5rem] p-8 cursor-pointer hover:border-teal-500/50 hover:bg-teal-500/5 relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/10 blur-3xl group-hover:bg-teal-500/20 transition-all" />
                 
                 <div className="flex justify-between items-start mb-10">
                   <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-teal-500 group-hover:text-white transition-all text-white">
-                    <FileJson size={20} />
+                    <Layers size={20} />
                   </div>
                   <button 
                     onClick={e => { 
@@ -81,7 +83,7 @@ export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSe
             
             {projects.length === 0 && (
               <div className="col-span-full py-20 border-2 border-dashed border-white/5 rounded-[3rem] flex flex-col items-center justify-center opacity-40 text-slate-400">
-                <Grid size={48} className="mb-4" />
+                <Grid3x3 size={48} className="mb-4" />
                 <p className="text-sm font-bold uppercase tracking-widest italic">No Projects Found. Launch the Architect.</p>
               </div>
             )}

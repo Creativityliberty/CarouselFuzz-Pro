@@ -106,7 +106,7 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, config, expor
       </div>
 
       <div className="absolute bottom-10 right-12 flex flex-col items-end z-20">
-        <div className="text-4xl font-black italic tracking-tighter text-white/20">
+        <div className="text-4xl font-black italic tracking-tighter text-white/25" style={{ WebkitTextStroke: "1px " + accent + "30" }}>
           0{config.slides.indexOf(slide) + 1}
         </div>
         <div 

@@ -269,11 +269,11 @@ export default function App() {
         <div className="flex-1 flex overflow-hidden">
            <div className="flex-1 flex flex-col items-center justify-center p-10 relative">
               <div className="absolute top-8 flex gap-3 bg-black/40 backdrop-blur-xl p-1.5 rounded-full border border-white/10 z-50">
-                <button onClick={() => setCurrentIdx(p => Math.max(0, p-1))} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft /></button>
+                <button onClick={() => setCurrentIdx(p => Math.max(0, p-1))} className="tool-btn p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronLeft /></button>
                 <div className="flex items-center px-4">
                   <span className="text-[10px] font-black tracking-widest uppercase text-slate-400">{currentIdx+1} / {currentProject.config.slides.length}</span>
                 </div>
-                <button onClick={() => setCurrentIdx(p => Math.min(currentProject.config.slides.length-1, p+1))} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronRight /></button>
+                <button onClick={() => setCurrentIdx(p => Math.min(currentProject.config.slides.length-1, p+1))} className="tool-btn p-2 hover:bg-white/10 rounded-full transition-colors"><ChevronRight /></button>
               </div>
 
               <div key={currentIdx} className="slide-enter shadow-[0_50px_100px_-20px_rgba(0,0,0,0.6)] rounded-[2.5rem] overflow-hidden">
@@ -293,7 +293,7 @@ export default function App() {
                     </div>
                     <div className="space-y-2">
                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Typeface</label>
-                       <select className="w-full bg-slate-800 rounded-lg p-2 text-xs font-bold" value={currentProject.config.fontFamily} onChange={e => setCurrentProject({ ...currentProject, config: { ...currentProject.config, fontFamily: e.target.value } })}>
+                       <select className="select-premium w-full bg-slate-800 rounded-lg p-2 text-xs font-bold" value={currentProject.config.fontFamily} onChange={e => setCurrentProject({ ...currentProject, config: { ...currentProject.config, fontFamily: e.target.value } })}>
                           {['Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Bebas Neue'].map(f => <option key={f} value={f}>{f}</option>)}
                        </select>
                     </div>
@@ -325,7 +325,7 @@ export default function App() {
                     <div className="space-y-2">
                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Layout Preset</label>
                        <select 
-                         className="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold focus:ring-1 focus:ring-teal-500 outline-none text-white cursor-pointer select-element" 
+                         className="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-xs font-bold focus:ring-1 focus:ring-teal-500 outline-none text-white cursor-pointer" 
                          value={currentProject.config.slides[currentIdx].layout} 
                          onChange={e => updateSlide({ layout: e.target.value as any })}
                        >
