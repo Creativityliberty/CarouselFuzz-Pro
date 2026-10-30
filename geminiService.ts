@@ -1,4 +1,7 @@
-import { CarouselConfig, Slide, ChatMessage, DesignSpec, DEFAULT_BRANDING, GroundingSource, Project } from "./types";
+import { 
+  CarouselConfig, Slide, ChatMessage, DesignSpec, DEFAULT_BRANDING, 
+  GroundingSource, Project, FormatPreset, Branding 
+} from "./types";
 
 /**
  * Service to interact with our backend AI Proxy
@@ -41,12 +44,24 @@ export const generateCarouselContent = async (
   topic: string, 
   history: ChatMessage[] = [],
   spec?: DesignSpec,
-  targetSlideCount: number = 7
+  targetSlideCount: number = 6,
+  sourceText?: string,
+  preset?: FormatPreset,
+  branding?: Branding
 ): Promise<CarouselConfig> => {
   const response = await fetch("/api/generate-carousel", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topic, history, spec, count: targetSlideCount, provider: currentProvider, apiKey: getApiKey() || undefined })
+    body: JSON.stringify({ 
+      topic, 
+      history, 
+      spec, 
+      count: targetSlideCount, 
+      sourceText,
+      preset,
+      provider: currentProvider, 
+      apiKey: getApiKey() || undefined 
+    })
   });
 
   if (!response.ok) {
@@ -57,26 +72,33 @@ export const generateCarouselContent = async (
   const aiOutput = await response.json();
   
   // Post-process the AI output into a CarouselConfig
-  const LAYOUTS = ['center', 'bottom-left', 'split-vertical', 'minimal', 'bold-title'];
+  const LAYOUTS = ['center', 'bottom-left', 'split-vertical', 'minimal', 'bold-title', 'comparison', 'card-glass', 'tweet-mockup', 'news-flash', 'soft-ui-card', 'gold-top-visual'];
   const FONTS = ['Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Bebas Neue'];
+  
+  const activeBranding = branding || DEFAULT_BRANDING;
+
   const config: CarouselConfig = {
     id: `project-${Date.now()}`,
     title: aiOutput.title || topic,
-    accentColor: aiOutput.accentColor || spec?.accentColor || "#2dd4bf",
-    fontFamily: FONTS.includes(aiOutput.fontFamily) ? aiOutput.fontFamily : (spec?.fontFamily || "Outfit"),
+    accentColor: aiOutput.accentColor || spec?.accentColor || "#1d4ed8",
+    fontFamily: FONTS.includes(aiOutput.fontFamily) ? aiOutput.fontFamily : (spec?.fontFamily || "Plus Jakarta Sans"),
     aspectRatio: (aiOutput.aspectRatio as '1:1' | '4:5') || '4:5',
-    theme: 'dark',
-    branding: DEFAULT_BRANDING,
+    theme: 'light',
+    branding: activeBranding,
     customSpec: spec,
+    formatPreset: preset,
     slides: (aiOutput.slides || []).map((s: any, idx: number) => ({ 
       ...s, 
       id: `slide-${idx}-${Date.now()}`,
-      layout: LAYOUTS.includes(s.layout) ? s.layout : 'center',
-      overlayOpacity: spec?.overlayOpacity ?? 0.8,
-      headlineSize: spec?.headlineSize ?? 60,
+      layout: LAYOUTS.includes(s.layout) ? s.layout : (idx === 0 ? 'soft-ui-card' : 'card-glass'),
+      overlayOpacity: spec?.overlayOpacity ?? 0.85,
+      headlineSize: spec?.headlineSize ?? 56,
       bodySize: spec?.bodySize ?? 20,
       textAlign: spec?.textAlign ?? (s.layout === 'center' ? 'center' : 'left'),
-      contentPadding: (spec?.margins_mm ?? 12) * 4
+      contentPadding: (spec?.margins_mm ?? 12) * 4,
+      badgeText: s.badgeText || (idx === 0 ? (preset === 'news-flash' ? '🔴 FLASH ACTU' : 'GUIDE') : `0${idx + 1}`),
+      comparisonDo: s.comparisonDo,
+      comparisonDont: s.comparisonDont
     }))
   };
 

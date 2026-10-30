@@ -1,7 +1,13 @@
 import React from 'react';
-import { Project } from '../../types';
+import { Project, BrandProfile, FormatPreset } from '../../types';
 import { Button } from './CoreButton';
-import { Cpu, Zap, Layers, History, FileJson, Trash2, Grid3x3, ArrowRight, Settings } from 'lucide-react';
+import { 
+  Sparkles, Layers, History, Trash2, ArrowRight, Settings, Compass 
+} from 'lucide-react';
+import { AiCreationHero } from './AiCreationHero';
+import { TemplateGallery } from './TemplateGallery';
+import { PrebuiltTemplate } from '../data/templates';
+import { BrandProfileSelector } from './BrandProfileSelector';
 
 interface ProjectExplorerProps {
   projects: Project[];
@@ -9,82 +15,173 @@ interface ProjectExplorerProps {
   onDelete: (id: string) => void;
   onCreateNew: (type: 'flash' | 'architect') => void;
   onOpenSettings?: () => void;
+  onGenerateQuick: (topic: string, sourceText: string, preset: FormatPreset, slideCount: number) => void;
+  onSelectTemplate: (template: PrebuiltTemplate) => void;
+  isGenerating: boolean;
+  profiles: BrandProfile[];
+  activeProfile: BrandProfile;
+  onSelectProfile: (profile: BrandProfile) => void;
+  onOpenBrandManager: () => void;
 }
 
-export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSelect, onDelete, onCreateNew, onOpenSettings }) => {
+export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ 
+  projects, 
+  onSelect, 
+  onDelete, 
+  onCreateNew, 
+  onOpenSettings,
+  onGenerateQuick,
+  onSelectTemplate,
+  isGenerating,
+  profiles,
+  activeProfile,
+  onSelectProfile,
+  onOpenBrandManager
+}) => {
   return (
-    <div className="flex-1 min-h-screen p-10 md:p-20 flex flex-col overflow-y-auto bg-slate-950 relative">
-      <div className="orb w-[500px] h-[500px] bg-teal-500/15 -top-40 -left-40" />
-      <div className="orb w-[400px] h-[400px] bg-indigo-500/10 top-1/3 right-0" style={{ animationDelay: "-7s" }} />
-      <header className="flex flex-col md:flex-row items-center justify-between mb-20 gap-8">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-[1.5rem] bg-teal-500 flex items-center justify-center shadow-[0_0_30px_rgba(20,184,166,0.4)]">
-            <Cpu size={32} className="text-white" />
+    <div className="flex-1 min-h-screen p-5 md:p-10 lg:p-14 flex flex-col overflow-y-auto bg-[#f4f6f9] text-slate-900 relative selection:bg-blue-500/20">
+      {/* Subtle Pastel Ambient Glows (Iconly Light Style) */}
+      <div 
+        className="orb w-[500px] h-[500px] -top-40 -left-40 opacity-15 pointer-events-none" 
+        style={{ backgroundColor: activeProfile.accentColor }} 
+      />
+      <div className="orb w-[400px] h-[400px] bg-blue-400/15 top-1/3 right-0 opacity-20 pointer-events-none" style={{ animationDelay: "-7s" }} />
+
+      {/* TOP NAVBAR (Iconly Soft UI Clean) */}
+      <header className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between mb-10 pb-6 border-b border-slate-200/80 gap-5 z-20">
+        <div className="flex items-center gap-4">
+          <div 
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-[0_12px_24px_-6px_rgba(29,78,216,0.3)] border-2 border-white"
+            style={{ backgroundColor: activeProfile.accentColor || '#1d4ed8' }}
+          >
+            <Sparkles size={22} className="text-white" />
           </div>
           <div>
-            <h1 className="text-5xl font-black uppercase tracking-tighter italic"><span className="aurora-text">Forge</span> <span className="text-white">de Design</span></h1>
-            <p className="text-slate-500 font-bold tracking-[0.3em] text-[10px] uppercase opacity-60">Architectural Content Engine v4.0</p>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                Carousel<span style={{ color: activeProfile.accentColor || '#1d4ed8' }}>Fuzz</span>
+              </h1>
+              <span className="text-[10px] font-bold uppercase bg-white text-blue-600 px-2.5 py-0.5 rounded-full border border-slate-200/80 shadow-sm">
+                SOFT UI STUDIO
+              </span>
+            </div>
+            <p className="text-slate-500 font-medium text-xs mt-0.5">
+              Créateur de carrousels LinkedIn & Instagram haut de gamme
+            </p>
           </div>
         </div>
-        <div className="flex gap-4">
-          <button onClick={onOpenSettings} className="p-3 bg-white/5 rounded-[1.25rem] border border-white/10 text-slate-400 hover:text-teal-400 transition-all" title="Settings">
-            <Settings size={20} />
+
+        {/* Right Action Cluster */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {/* Workspace / Brand Profile Selector */}
+          <BrandProfileSelector
+            profiles={profiles}
+            activeProfile={activeProfile}
+            onSelectProfile={onSelectProfile}
+            onOpenBrandManager={onOpenBrandManager}
+          />
+
+          <button 
+            onClick={onOpenSettings} 
+            className="p-2.5 bg-white hover:bg-slate-50 rounded-full border border-slate-200/80 text-slate-600 hover:text-slate-900 transition-all shadow-sm" 
+            title="Clé API & Paramètres IA"
+          >
+            <Settings size={18} />
           </button>
-          <Button variant="glass" size="lg" onClick={() => onCreateNew('flash')}>
-            <Zap size={20} className="text-teal-400" /> Flash Create
-          </Button>
-          <Button variant="primary" size="lg" onClick={() => onCreateNew('architect')}>
-            <Layers size={20} /> Design Architect
+
+          <Button variant="glass" size="md" onClick={() => onCreateNew('architect')}>
+            <Layers size={15} /> Cloner un style (ADN)
           </Button>
         </div>
       </header>
 
-      <main className="flex-1">
-        <section className="mb-20">
-          <div className="flex items-center gap-3 mb-8">
-            <History size={18} className="text-slate-600" />
-            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Recent Masterpieces</h2>
+      <main className="flex-1 space-y-14 z-10 max-w-7xl mx-auto w-full">
+        
+        {/* 1. HERO HUB DE GÉNÉRATION D'ACTUS & CARROUSELS (Iconly Card) */}
+        <section>
+          <AiCreationHero
+            onGenerate={onGenerateQuick}
+            isGenerating={isGenerating}
+            activeProfile={activeProfile}
+          />
+        </section>
+
+        {/* 2. BIBLIOTHÈQUE DE MODÈLES SIGNATURE */}
+        <section>
+          <TemplateGallery onSelectTemplate={onSelectTemplate} />
+        </section>
+
+        {/* 3. PROJETS & CARROUSELS RÉCENTS */}
+        <section className="space-y-5 pb-12">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-600 shadow-sm">
+                <History size={16} />
+              </div>
+              <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+                Vos Carrousels Récents
+              </h2>
+              <span className="text-xs bg-white text-slate-500 px-2.5 py-0.5 rounded-full border border-slate-200/80 font-mono shadow-sm">
+                {projects.length}
+              </span>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {projects.map(p => (
               <div 
                 key={p.id} 
                 onClick={() => onSelect(p)}
-                className="group card-lift bg-white/5 border border-white/10 rounded-[2.5rem] p-8 cursor-pointer hover:border-teal-500/50 hover:bg-teal-500/5 relative overflow-hidden"
+                className="group relative bg-white border-2 border-white rounded-[2rem] p-6 cursor-pointer hover:border-blue-500/40 shadow-[0_18px_38px_-12px_rgba(15,23,42,0.06)] hover:shadow-[0_24px_48px_-12px_rgba(29,78,216,0.14)] transition-all duration-300 overflow-hidden flex flex-col justify-between h-56"
               >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/10 blur-3xl group-hover:bg-teal-500/20 transition-all" />
-                
-                <div className="flex justify-between items-start mb-10">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-teal-500 group-hover:text-white transition-all text-white">
-                    <Layers size={20} />
+                <div className="flex justify-between items-start">
+                  <div 
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center border border-slate-100 font-bold text-xs shadow-sm"
+                    style={{ backgroundColor: `${p.config.accentColor || '#1d4ed8'}15`, color: p.config.accentColor || '#1d4ed8' }}
+                  >
+                    <Layers size={18} />
                   </div>
                   <button 
                     onClick={e => { 
                       e.stopPropagation(); 
                       onDelete(p.id);
                     }} 
-                    className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/20 rounded-lg text-red-500 transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-50 rounded-full text-red-500 transition-all"
+                    title="Supprimer ce carrousel"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
                 
-                <h3 className="text-xl font-black tracking-tight mb-2 truncate text-white uppercase italic">{p.name}</h3>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  {p.config?.slides?.length || 0} SLIDES • {new Date(p.updatedAt).toLocaleDateString()}
-                </p>
+                <div>
+                  <h3 className="text-base font-extrabold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                    {p.name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-2 text-[11px] font-mono text-slate-400">
+                    <span>{p.config?.slides?.length || 0} SLIDES</span>
+                    <span>•</span>
+                    <span>{new Date(p.updatedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
                 
-                <div className="mt-8 flex justify-end">
-                  <ArrowRight size={20} className="text-teal-400 opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all" />
+                <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                  <span className="text-[11px] font-bold text-slate-500 group-hover:text-blue-600 transition-colors">
+                    Ouvrir dans le studio
+                  </span>
+                  <ArrowRight size={16} className="text-blue-600 transform -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all" />
                 </div>
               </div>
             ))}
             
             {projects.length === 0 && (
-              <div className="col-span-full py-20 border-2 border-dashed border-white/5 rounded-[3rem] flex flex-col items-center justify-center opacity-40 text-slate-400">
-                <Grid3x3 size={48} className="mb-4" />
-                <p className="text-sm font-bold uppercase tracking-widest italic">No Projects Found. Launch the Architect.</p>
+              <div className="col-span-full py-14 border-2 border-dashed border-slate-200/90 rounded-[2.2rem] flex flex-col items-center justify-center text-center p-6 bg-white/60">
+                <div className="w-14 h-14 rounded-full bg-white shadow-md border border-slate-100 flex items-center justify-center text-blue-600 mb-3">
+                  <Compass size={26} />
+                </div>
+                <h4 className="text-sm font-extrabold text-slate-800">Aucun carrousel enregistré</h4>
+                <p className="text-xs text-slate-500 max-w-sm mt-1">
+                  Entrez un sujet dans la carte blanche ci-dessus ou cliquez sur l'un des modèles signature pour générer votre premier carrousel.
+                </p>
               </div>
             )}
           </div>

@@ -9,6 +9,7 @@ interface ButtonProps {
   disabled?: boolean;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   id?: string;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 export const Button: React.FC<ButtonProps> = ({ 
@@ -19,32 +20,34 @@ export const Button: React.FC<ButtonProps> = ({
   className = "", 
   disabled, 
   size = 'md',
-  id
+  id,
+  type = 'button'
 }) => {
-  const base = "px-4 py-2 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 font-bold whitespace-nowrap active:scale-95 disabled:pointer-events-none";
+  const base = "px-5 py-2.5 rounded-full transition-all duration-300 flex items-center justify-center gap-2 font-bold whitespace-nowrap active:scale-95 disabled:pointer-events-none cursor-pointer";
   
   const styles = {
-    primary: "bg-teal-500 text-white shadow-[0_0_20px_rgba(20,184,166,0.3)] hover:bg-teal-400 disabled:opacity-50",
-    white: "bg-white text-slate-900 shadow-xl hover:bg-slate-50 disabled:opacity-50",
-    ghost: "text-slate-500 hover:text-white hover:bg-white/5",
-    neon: "bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500 hover:text-white shadow-[0_0_15px_rgba(45,212,191,0.1)]",
+    primary: "bg-[#1d4ed8] text-white shadow-[0_12px_25px_-6px_rgba(29,78,216,0.45)] hover:bg-[#1e40af] disabled:opacity-50",
+    white: "bg-white text-slate-900 border border-slate-200/80 shadow-md hover:bg-slate-50 disabled:opacity-50",
+    ghost: "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50",
+    neon: "bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white shadow-sm",
     glass: active 
-      ? "bg-teal-500/20 text-teal-400 border border-teal-500/50" 
-      : "bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10",
-    danger: "bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white"
+      ? "bg-blue-50 text-blue-600 border border-blue-300 shadow-sm" 
+      : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 shadow-sm",
+    danger: "bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white"
   };
   
   const sizes = { 
-    xs: "text-[9px] py-1 px-2", 
-    sm: "text-[10px] py-1.5 px-3", 
-    md: "text-sm", 
+    xs: "text-[10px] py-1 px-3", 
+    sm: "text-xs py-1.5 px-4", 
+    md: "text-sm py-2.5 px-5", 
     lg: "text-base py-3 px-6",
-    xl: "text-lg py-4 px-8 rounded-3xl"
+    xl: "text-lg py-4 px-8"
   };
 
   return (
     <button 
       id={id}
+      type={type}
       disabled={disabled} 
       onClick={onClick} 
       className={`${base} ${styles[variant]} ${sizes[size]} ${className}`}

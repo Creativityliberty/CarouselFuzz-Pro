@@ -11,13 +11,21 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-50 antialiased selection:bg-teal-500/30;
+    @apply bg-[#f4f6f9] text-slate-900 antialiased selection:bg-blue-500/20;
   }
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl;
+    @apply bg-white/95 backdrop-blur-2xl border border-white shadow-[0_24px_60px_-15px_rgba(15,23,42,0.08)];
+  }
+  
+  .soft-card {
+    @apply bg-white rounded-[2.2rem] border border-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08),inset_0_2px_4px_rgba(255,255,255,1)];
+  }
+  
+  .soft-inset {
+    @apply bg-[#f8fafc] rounded-2xl border border-slate-200/80 shadow-inner;
   }
   
   .neon-shimmer {
@@ -80,6 +88,13 @@
 }
 .tool-btn:hover { transform: translateY(-2px); }
 .tool-btn:active { transform: scale(0.9); }
+
+.spec-action {
+  @apply rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all;
+}
+.spec-action:hover:not(:disabled) {
+  @apply border-teal-500/60 bg-teal-500/10 text-teal-300;
+}
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

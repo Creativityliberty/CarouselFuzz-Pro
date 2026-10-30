@@ -249,20 +249,47 @@ function sanitizeContents(historyList: any[]): any[] {
  */
 app.post("/api/generate-carousel", async (req, res) => {
   try {
-    const { topic, history, spec, count = 7, provider, ollamaModel, apiKey } = req.body;
+    const { topic, history, spec, count = 6, sourceText, preset = "auto", provider, ollamaModel, apiKey } = req.body;
 
     // Perform clean, robust sanitization on history
     const contents = sanitizeContents(history || []);
 
+    // Format prompt instructions based on preset and optional source
+    let presetGuidance = "";
+    if (preset === "news-flash") {
+      presetGuidance = `This is a BREAKING NEWS / ACTU CHAUDE carousel format.
+Slide 1: High-impact urgent headline with badge '🔴 FLASH ACTU', setting the scene.
+Slide 2: The exact facts/timeline of what happened.
+Slide 3: Why it matters and the direct business/market consequence.
+Slide 4: Key figures or quote from experts.
+Final slides: The takeaway and call to save/share.`;
+    } else if (preset === "do-dont") {
+      presetGuidance = `This is a 'DO THIS, NOT THAT' (À FAIRE / À ÉVITER) comparison carousel format.
+Slides 2-5 must compare a bad common practice (comparisonDont) with a smart high-yield replacement (comparisonDo). Set layout to 'comparison'.`;
+    } else if (preset === "mistakes") {
+      presetGuidance = `This is a 'ROOKIE MISTAKES' format. One major mistake per slide with immediate concrete fix.`;
+    } else if (preset === "step-by-step") {
+      presetGuidance = `This is a 'STEP-BY-STEP / FRAMEWORK' format. Slide 1 introduces the system. Subsequent slides are numbered Step 1 to Step N with actionable tactics.`;
+    } else if (preset === "hot-take") {
+      presetGuidance = `This is a 'HOT TAKE / AVIS TRANCHÉ' microblog format. Unpopular opinion that sparks discussion. Layout can use 'tweet-mockup' or 'bold-title'.`;
+    } else if (preset === "case-study") {
+      presetGuidance = `This is a 'CASE STUDY' format: The initial painful problem, what failed first, the breakthrough, and final metrics/numbers.`;
+    }
+
+    const sourceContext = sourceText && sourceText.trim().length > 0 
+      ? `\n\nACTUALITY / SOURCE MATERIAL TO CONDENSE INTO THE CAROUSEL:\n"""\n${sourceText.trim()}\n"""\nExtract the core lessons and factual elements strictly from this source.`
+      : "";
+
     // Add immediate request part
-    const promptMessage = `Create exactly ${count} social media slides for a creative carousel about the topic: "${topic}". Ensure high conversion copywriting.
-${spec ? `Adhere precisely to this Design DNA spec constraint: ${JSON.stringify(spec)}` : ""}`;
+    const promptMessage = `Create exactly ${count} social media slides for a high-converting carousel about: "${topic}".
+${presetGuidance}
+${sourceContext}
+${spec ? `Adhere strictly to this Design DNA spec: ${JSON.stringify(spec)}` : ""}
+Ensure punchy, elite copywriting without generic AI fluff. One central idea per slide.`;
 
     if (contents.length > 0 && contents[contents.length - 1].role === "user") {
-      // If the last message is from user, merge the final prompt design instructions with it
       contents[contents.length - 1].parts[0].text += "\n" + promptMessage;
     } else {
-      // Otherwise list as a new user entry
       contents.push({
         role: "user",
         parts: [{ text: promptMessage }]
@@ -272,20 +299,23 @@ ${spec ? `Adhere precisely to this Design DNA spec constraint: ${JSON.stringify(
     const schema = {
       type: Type.OBJECT,
       properties: {
-        title: { type: Type.STRING, description: "The viral catchy headline/concept for the whole carousel deck." },
-        accentColor: { type: Type.STRING, description: "Hex format brand primary accent color representing this deck concept." },
-        fontFamily: { type: Type.STRING, description: "The typography font name of choice. Choose from 'Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Bebas Neue'." },
-        aspectRatio: { type: Type.STRING, description: "Standard carousel ratio. Must be '1:1' (Square) or '4:5' (Portrait)." },
+        title: { type: Type.STRING, description: "Catchy title for the deck." },
+        accentColor: { type: Type.STRING, description: "HEX accent color (e.g., #2dd4bf, #f59e0b, #10b981, #38bdf8)." },
+        fontFamily: { type: Type.STRING, description: "Font name: 'Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', or 'Bebas Neue'." },
+        aspectRatio: { type: Type.STRING, description: "Must be '4:5' or '1:1'." },
         slides: {
           type: Type.ARRAY,
-          description: `Slides list. Create exactly ${count} highly engaging slides of structured progressive messaging or steps.`,
+          description: `Array of exactly ${count} slides.`,
           items: {
             type: Type.OBJECT,
             properties: {
-              headline: { type: Type.STRING, description: "The main big bold statement for this slide. Wrap exactly ONE central word or visual punchline in curly braces {like this} to style with accent color (e.g., 'Learn {faster} today')." },
-              body: { type: Type.STRING, description: "Supporting narrative or explanation that adds immediate actionable value. Wrap styled words in curly braces if needed." },
-              visualPrompt: { type: Type.STRING, description: "Exquisite visual description prompt used for AI drawing background. Keep under 15 words." },
-              layout: { type: Type.STRING, description: "The recommended background layout theme. Choose exactly from: 'center', 'bottom-left', 'split-vertical', 'minimal', 'bold-title'." }
+              headline: { type: Type.STRING, description: "Bold statement. Wrap ONE punchline word in curly braces {like this} for accent color styling." },
+              body: { type: Type.STRING, description: "Clear, crisp supporting text." },
+              visualPrompt: { type: Type.STRING, description: "Under 15 words image description." },
+              layout: { type: Type.STRING, description: "Layout choice: 'bold-title', 'card-glass', 'comparison', 'tweet-mockup', 'center', 'bottom-left', 'minimal'." },
+              badgeText: { type: Type.STRING, description: "Short badge tag (e.g., '🔴 FLASH ACTU', 'SWAP 01', 'ÉTAPE 1', 'ASTUCE')." },
+              comparisonDont: { type: Type.STRING, description: "Only if layout is 'comparison': what to avoid." },
+              comparisonDo: { type: Type.STRING, description: "Only if layout is 'comparison': what to do instead." }
             },
             required: ["headline", "body", "visualPrompt", "layout"]
           }
@@ -298,7 +328,7 @@ ${spec ? `Adhere precisely to this Design DNA spec constraint: ${JSON.stringify(
       provider,
       ollamaModel,
       apiKey,
-      system: "You are an award-winning content marketer, social media copywriter, and digital slide deck architecture expert. Your goal is to deliver perfectly structured carousel config properties matching requested subjects.",
+      system: "You are an elite ghostwriter and viral carousel designer for LinkedIn and Instagram. You write concise, high-value, scroll-stopping decks.",
       schema,
       contents
     });

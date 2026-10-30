@@ -23,46 +23,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-slate-900 rounded-[2.5rem] border border-white/10 shadow-2xl p-10 space-y-8">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] border-2 border-white shadow-[0_30px_70px_-15px_rgba(15,23,42,0.2)] p-8 md:p-10 space-y-6 text-slate-900">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500 flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-[0_12px_24px_-6px_rgba(29,78,216,0.4)]">
               <KeyRound size={22} className="text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black italic tracking-tighter uppercase">Settings</h2>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Secrets & Engine</p>
+              <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Paramètres IA</h2>
+              <p className="text-xs font-semibold text-slate-400">Clé API Gemini & Moteur Local</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-3 bg-white/5 rounded-xl border border-white/10 hover:text-red-400 transition-colors"><X size={20} /></button>
+          <button onClick={onClose} className="p-2.5 bg-slate-50 rounded-full border border-slate-200/80 text-slate-500 hover:text-slate-800 transition-colors">
+            <X size={18} />
+          </button>
         </header>
 
         <section className="space-y-4">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Gemini API Key</label>
+          <label className="text-xs font-bold text-slate-700 block">Clé API Google Gemini</label>
           <input
             type="password"
             value={key}
             onChange={e => { setKey(e.target.value); setSaved(false); }}
             placeholder="AIza..."
-            className="w-full bg-slate-950/60 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold outline-none focus:ring-1 focus:ring-teal-500"
+            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
-          {masked && <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Saved: {masked}</p>}
-          <div className="flex items-start gap-2 text-[10px] text-slate-500 leading-relaxed">
-            <Cloud size={14} className="text-teal-500 shrink-0 mt-0.5" />
-            <span>Stored in your browser (localStorage) only. Sent to your local server per request — never written to disk by the app.</span>
+          {masked && <p className="text-xs font-mono text-slate-500">Clé active : {masked}</p>}
+          <div className="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+            <Cloud size={15} className="text-blue-600 shrink-0 mt-0.5" />
+            <span>Stockée uniquement dans votre navigateur (localStorage). Envoyée à votre serveur local lors de chaque génération.</span>
           </div>
-          <div className="flex items-start gap-2 text-[10px] text-slate-500 leading-relaxed">
-            <HardDrive size={14} className="text-slate-400 shrink-0 mt-0.5" />
-            <span>Optional: a GEMINI_API_KEY env var on the server takes priority when this field is empty. Ollama Local needs no key.</span>
+          <div className="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+            <HardDrive size={15} className="text-slate-500 shrink-0 mt-0.5" />
+            <span>Optionnel : si GEMINI_API_KEY est définie dans votre fichier .env serveur, elle fonctionne automatiquement même si ce champ est vide.</span>
           </div>
         </section>
 
-        <footer className="flex gap-3 items-center">
-          <Button variant="primary" size="lg" className="flex-1" onClick={handleSave} disabled={!key.trim()}>
-            Save Key
+        <footer className="flex gap-3 items-center pt-2">
+          <Button variant="secondary" size="lg" onClick={onClose}>
+            Fermer
           </Button>
-          {saved && <span className="flex items-center gap-1 text-teal-400 text-xs font-black uppercase tracking-widest"><CheckCircle2 size={16} /> Saved</span>}
+          <Button variant="primary" size="lg" className="flex-1" onClick={handleSave} disabled={!key.trim()}>
+            Enregistrer la clé
+          </Button>
+          {saved && <span className="flex items-center gap-1 text-emerald-600 text-xs font-bold"><CheckCircle2 size={16} /> Enregistré</span>}
         </footer>
       </div>
     </div>
