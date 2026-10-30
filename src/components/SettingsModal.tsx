@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { getApiKey, setApiKey } from '../../geminiService';
+import { getApiKey, setApiKey, getPollinationsKey, setPollinationsKey } from '../../geminiService';
 import { Button } from './CoreButton';
-import { X, KeyRound, CheckCircle2, Cloud, HardDrive } from 'lucide-react';
+import { X, KeyRound, CheckCircle2, Cloud, HardDrive, Sparkles } from 'lucide-react';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -9,10 +9,12 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const [key, setKey] = useState<string>(getApiKey());
+  const [polliKey, setPolliKey] = useState<string>(getPollinationsKey());
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
     setApiKey(key.trim());
+    setPollinationsKey(polliKey.trim());
     setSaved(true);
     setTimeout(onClose, 900);
   };
@@ -31,8 +33,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               <KeyRound size={22} className="text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Paramètres IA</h2>
-              <p className="text-xs font-semibold text-slate-400">Clé API Gemini & Moteur Local</p>
+              <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Paramètres Moteur IA</h2>
+              <p className="text-xs font-semibold text-slate-400">Gemini (Texte) & Pollinations / Imagen (Visuels)</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2.5 bg-slate-50 rounded-full border border-slate-200/80 text-slate-500 hover:text-slate-800 transition-colors">
@@ -41,22 +43,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         </header>
 
         <section className="space-y-4">
-          <label className="text-xs font-bold text-slate-700 block">Clé API Google Gemini</label>
-          <input
-            type="password"
-            value={key}
-            onChange={e => { setKey(e.target.value); setSaved(false); }}
-            placeholder="AIza..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-          {masked && <p className="text-xs font-mono text-slate-500">Clé active : {masked}</p>}
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Clé API Google Gemini (Rédaction & Idées)</label>
+            <input
+              type="password"
+              value={key}
+              onChange={e => { setKey(e.target.value); setSaved(false); }}
+              placeholder="AIza..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+            {masked && <p className="text-[11px] font-mono text-slate-500 mt-1">Clé active : {masked}</p>}
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Sparkles size={14} className="text-blue-600" />
+                Clé Pollinations.ai (Optionnelle / Images illimitées)
+              </label>
+              <a 
+                href="https://enter.pollinations.ai/keys" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="text-[11px] text-blue-600 font-bold hover:underline"
+              >
+                Obtenir ma clé →
+              </a>
+            </div>
+            <input
+              type="password"
+              value={polliKey}
+              onChange={e => { setPolliKey(e.target.value); setSaved(false); }}
+              placeholder="sk_... (Optionnel : fonctionne aussi sans clé)"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+            <p className="text-[10px] text-slate-500 mt-1">
+              Sans clé, le générateur utilise le mode public instantané gratuit. Si vous avez une clé Pollinations, collez-la pour débloquer Flux.1 Schnell en priorité haute.
+            </p>
+          </div>
+
           <div className="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
             <Cloud size={15} className="text-blue-600 shrink-0 mt-0.5" />
-            <span>Stockée uniquement dans votre navigateur (localStorage). Envoyée à votre serveur local lors de chaque génération.</span>
-          </div>
-          <div className="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-            <HardDrive size={15} className="text-slate-500 shrink-0 mt-0.5" />
-            <span>Optionnel : si GEMINI_API_KEY est définie dans votre fichier .env serveur, elle fonctionne automatiquement même si ce champ est vide.</span>
+            <span>Vos clés restent sécurisées localement dans votre navigateur (`localStorage`).</span>
           </div>
         </section>
 
@@ -64,8 +92,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           <Button variant="secondary" size="lg" onClick={onClose}>
             Fermer
           </Button>
-          <Button variant="primary" size="lg" className="flex-1" onClick={handleSave} disabled={!key.trim()}>
-            Enregistrer la clé
+          <Button variant="primary" size="lg" className="flex-1" onClick={handleSave}>
+            Enregistrer
           </Button>
           {saved && <span className="flex items-center gap-1 text-emerald-600 text-xs font-bold"><CheckCircle2 size={16} /> Enregistré</span>}
         </footer>

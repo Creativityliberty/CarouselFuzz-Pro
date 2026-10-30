@@ -342,51 +342,99 @@ Ensure punchy, elite copywriting without generic AI fluff. One central idea per 
 
 /**
  * Runtime Slide Visual Arts Image generation proxy
+ * Uses Gemini Imagen if valid paid quota is present, with seamless automatic fallback to Pollinations.ai (Flux.1 Schnell / Sana)
  */
 app.post("/api/generate-image", async (req, res) => {
   try {
-    const { prompt, aspectRatio, vibe, apiKey } = req.body;
-    const ai = getAI(apiKey);
+    const { prompt, aspectRatio, vibe, apiKey, pollinationsKey } = req.body;
+    
+    // Mapping dimensions for slide ratios
+    let width = 1080;
+    let height = 1350;
+    let imageRatio = "3:4";
 
-    // Mapping aspect ratio from standard slider sizes to supported gemini-2.5-flash-image ones
-    const imageRatio = aspectRatio === "4:5" ? "3:4" : "1:1";
+    if (aspectRatio === "1:1") {
+      width = 1080;
+      height = 1080;
+      imageRatio = "1:1";
+    } else if (aspectRatio === "3:4") {
+      width = 1080;
+      height = 1440;
+      imageRatio = "3:4";
+    } else if (aspectRatio === "9:16") {
+      width = 1080;
+      height = 1920;
+      imageRatio = "9:16";
+    }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
-      contents: {
-        parts: [{ text: `A professional, premium digital illustration, background or visual asset suitable for a high-quality presentation slide: ${prompt}. Esthetic style vibe: ${vibe || "modern gradient clean tech vector art style"}` }]
-      },
-      config: {
-        imageConfig: {
-          aspectRatio: imageRatio as any,
-          imageSize: "1K"
-        }
+    const enhancedPrompt = `${prompt}, ${vibe || "modern clean soft ui minimalist 3d visual digital art"}`;
+
+    // 1. Priorité Pollinations si clé fournie OU si pas de Gemini valide
+    const polliApiKey = pollinationsKey || process.env.POLLINATIONS_API_KEY;
+
+    // Tentative Pollinations direct (très haute qualité, Flux.1 Schnell / Sana)
+    try {
+      let polliUrl = "";
+      if (polliApiKey) {
+        polliUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(enhancedPrompt)}?model=black-forest-labs/flux.1-schnell&width=${width}&height=${height}&key=${polliApiKey}`;
+      } else {
+        // Mode public sans clé (Sana / Flux fast)
+        polliUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${width}&height=${height}&nologo=true`;
       }
-    });
 
-    let imageUri = null;
-    const candidates = response.candidates;
-    if (candidates && candidates.length > 0) {
-      const parts = candidates[0].content?.parts;
-      if (parts) {
-        for (const part of parts) {
-          if (part.inlineData && part.inlineData.data) {
-            imageUri = `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
-            break;
+      const imgRes = await fetch(polliUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" }
+      });
+
+      if (imgRes.ok) {
+        const arrayBuffer = await imgRes.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+        const imageUri = `data:${contentType};base64,${base64}`;
+        return res.json({ imageUri, source: "pollinations" });
+      }
+    } catch (polliErr: any) {
+      console.warn("Pollinations attempt failed, trying Gemini Imagen fallback:", polliErr?.message);
+    }
+
+    // 2. Si Pollinations n'a pas répondu, tentative via Google Gemini Imagen
+    try {
+      const ai = getAI(apiKey);
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-image",
+        contents: {
+          parts: [{ text: `A professional, premium digital illustration, background or visual asset suitable for a high-quality presentation slide: ${prompt}. Esthetic style vibe: ${vibe || "modern gradient clean tech vector art style"}` }]
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: imageRatio as any,
+            imageSize: "1K"
+          }
+        }
+      });
+
+      const candidates = response.candidates;
+      if (candidates && candidates.length > 0) {
+        const parts = candidates[0].content?.parts;
+        if (parts) {
+          for (const part of parts) {
+            if (part.inlineData && part.inlineData.data) {
+              const imageUri = `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
+              return res.json({ imageUri, source: "gemini" });
+            }
           }
         }
       }
+    } catch (geminiErr: any) {
+      console.warn("Gemini Imagen failed (likely quota 429):", geminiErr?.message);
     }
 
-    if (!imageUri) {
-      // Robust beautiful artistic placeholder fallback
-      imageUri = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop";
-    }
+    // 3. Dernier fallback garanti
+    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&nologo=true`;
+    return res.json({ imageUri: fallbackUrl, source: "pollinations-url" });
 
-    res.json({ imageUri });
   } catch (error: any) {
     console.error("AI Slide Image draw failed:", error);
-    // Graceful fallback response on error so the application never hangs
     res.json({ imageUri: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop" });
   }
 });

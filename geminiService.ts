@@ -15,6 +15,14 @@ export const setApiKey = (key: string) => {
   try { key ? localStorage.setItem("cf_gemini_key", key) : localStorage.removeItem("cf_gemini_key"); } catch { /* noop */ }
 };
 
+// Pollinations API key entered in the app UI, optional
+export const getPollinationsKey = (): string => {
+  try { return localStorage.getItem("cf_pollinations_key") || ""; } catch { return ""; }
+};
+export const setPollinationsKey = (key: string) => {
+  try { key ? localStorage.setItem("cf_pollinations_key", key) : localStorage.removeItem("cf_pollinations_key"); } catch { /* noop */ }
+};
+
 export const analyzeDesignADN = async (images: string[]): Promise<DesignSpec> => {
   const response = await fetch("/api/analyze-design", {
     method: "POST",
@@ -109,7 +117,13 @@ export const generateSlideImage = async (prompt: string, aspectRatio: string, vi
   const response = await fetch("/api/generate-image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, aspectRatio, vibe, apiKey: getApiKey() || undefined })
+    body: JSON.stringify({ 
+      prompt, 
+      aspectRatio, 
+      vibe, 
+      apiKey: getApiKey() || undefined,
+      pollinationsKey: getPollinationsKey() || undefined
+    })
   });
 
   if (!response.ok) {

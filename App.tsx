@@ -682,6 +682,96 @@ export default function App() {
                        />
                      </div>
 
+                     {/* Image / Visuel du Slide (Upload local, URL, ou régénération individuelle) */}
+                     <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                       <div className="flex items-center justify-between">
+                         <label className="text-[11px] font-extrabold uppercase text-slate-700 flex items-center gap-1.5">
+                           <ImageIcon size={14} className="text-blue-600" />
+                           Image de Fond du Slide
+                         </label>
+                         {currentProject.config.slides[currentIdx].imageUri && (
+                           <button
+                             type="button"
+                             onClick={() => updateSlide({ imageUri: undefined })}
+                             className="text-[10px] text-red-500 font-bold hover:underline"
+                           >
+                             Retirer l'image
+                           </button>
+                         )}
+                       </div>
+
+                       {currentProject.config.slides[currentIdx].imageUri ? (
+                         <div className="relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                           <img 
+                             src={currentProject.config.slides[currentIdx].imageUri} 
+                             className="w-full h-full object-cover" 
+                             alt="Slide Background" 
+                           />
+                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                             <button
+                               type="button"
+                               onClick={() => updateSlide({ imageUri: undefined })}
+                               className="px-2.5 py-1 bg-red-600 text-white rounded-lg text-[10px] font-bold shadow"
+                             >
+                               Supprimer
+                             </button>
+                           </div>
+                         </div>
+                       ) : (
+                         <div className="text-[11px] text-slate-400 font-medium">
+                           Aucune image de fond (utilise le dégradé Soft UI).
+                         </div>
+                       )}
+
+                       <div className="flex items-center gap-2">
+                         <input
+                           type="file"
+                           id={`slide-img-upload-${currentIdx}`}
+                           accept="image/*"
+                           className="hidden"
+                           onChange={e => {
+                             const file = e.target.files?.[0];
+                             if (file) {
+                               const reader = new FileReader();
+                               reader.onload = () => updateSlide({ imageUri: reader.result as string });
+                               reader.readAsDataURL(file);
+                             }
+                           }}
+                         />
+                         <button
+                           type="button"
+                           onClick={() => document.getElementById(`slide-img-upload-${currentIdx}`)?.click()}
+                           className="flex-1 py-1.5 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-[11px] font-bold text-center shadow-sm"
+                         >
+                           📁 Depuis mon PC
+                         </button>
+                         <button
+                           type="button"
+                           onClick={async () => {
+                             const prompt = currentProject.config.slides[currentIdx].visualPrompt || currentProject.config.slides[currentIdx].headline;
+                             try {
+                               const uri = await generateSlideImage(prompt, currentProject.config.aspectRatio, currentProject.config.customSpec?.vibe);
+                               updateSlide({ imageUri: uri });
+                             } catch (err: any) {
+                               alert(`Erreur image : ${err?.message || err}`);
+                             }
+                           }}
+                           className="flex-1 py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold text-center shadow-sm flex items-center justify-center gap-1"
+                         >
+                           <Sparkles size={12} />
+                           Générer par IA
+                         </button>
+                       </div>
+
+                       <input
+                         type="text"
+                         value={currentProject.config.slides[currentIdx].imageUri || ''}
+                         onChange={e => updateSlide({ imageUri: e.target.value })}
+                         placeholder="Ou collez une URL d'image (https://...)"
+                         className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                       />
+                     </div>
+
                      {/* Body */}
                      <div>
                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Texte d'explication</label>
