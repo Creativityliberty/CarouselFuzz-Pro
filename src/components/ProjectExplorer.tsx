@@ -1,16 +1,17 @@
 import React from 'react';
 import { Project } from '../../types';
 import { Button } from './CoreButton';
-import { Cpu, Zap, Layers, History, FileJson, Trash2, Grid, ArrowRight } from 'lucide-react';
+import { Cpu, Zap, Layers, History, FileJson, Trash2, Grid, ArrowRight, Settings } from 'lucide-react';
 
 interface ProjectExplorerProps {
   projects: Project[];
   onSelect: (p: Project) => void;
   onDelete: (id: string) => void;
   onCreateNew: (type: 'flash' | 'architect') => void;
+  onOpenSettings?: () => void;
 }
 
-export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSelect, onDelete, onCreateNew }) => {
+export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSelect, onDelete, onCreateNew, onOpenSettings }) => {
   return (
     <div className="flex-1 min-h-screen p-10 md:p-20 flex flex-col overflow-y-auto bg-slate-950">
       <header className="flex flex-col md:flex-row items-center justify-between mb-20 gap-8">
@@ -24,6 +25,9 @@ export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSe
           </div>
         </div>
         <div className="flex gap-4">
+          <button onClick={onOpenSettings} className="p-3 bg-white/5 rounded-[1.25rem] border border-white/10 text-slate-400 hover:text-teal-400 transition-all" title="Settings">
+            <Settings size={20} />
+          </button>
           <Button variant="glass" size="lg" onClick={() => onCreateNew('flash')}>
             <Zap size={20} className="text-teal-400" /> Flash Create
           </Button>

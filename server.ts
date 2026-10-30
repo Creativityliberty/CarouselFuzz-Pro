@@ -19,6 +19,7 @@ interface LLMRequest {
   ollamaModel?: string;
   system?: string;
   schema?: any;
+  apiKey?: string;
   contents: any[];
 }
 
@@ -53,7 +54,7 @@ function contentsToPrompt(contents: any[]): string {
 }
 
 /** Unified text generation: Gemini structured, or local Ollama with JSON output. */
-async function generateText({ provider = "gemini", ollamaModel, system, schema, contents }: LLMRequest): Promise<any> {
+async function generateText({ provider = "gemini", ollamaModel, system, schema, apiKey, contents }: LLMRequest): Promise<any> {
   if (provider === "ollama") {
     const messages: any[] = [];
     if (system || schema) {
@@ -88,7 +89,7 @@ async function generateText({ provider = "gemini", ollamaModel, system, schema, 
   }
 
   // Default: Gemini with native responseSchema
-  const ai = getAI();
+  const ai = getAI(apiKey);
   const response = await ai.models.generateContent({
     model: "gemini-3.5-flash",
     contents,
@@ -104,10 +105,10 @@ async function generateText({ provider = "gemini", ollamaModel, system, schema, 
 }
 
 // Gemini client initialization helper
-const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
+const getAI = (overrideKey?: string) => {
+  const apiKey = overrideKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is not set. Please supply it in Settings.");
+    throw new Error("GEMINI_API_KEY is not set. Open Settings in the app to paste your key (saved locally in your browser only).");
   }
   return new GoogleGenAI({
     apiKey,
@@ -126,7 +127,7 @@ const getAI = () => {
  */
 app.post("/api/analyze-design", async (req, res) => {
   try {
-    const { images, provider } = req.body;
+    const { images, provider, apiKey } = req.body;
     if (provider === "ollama") {
       return res.status(400).json({ error: "Design DNA analysis needs a vision model. Switch to Gemini for image analysis (Ollama local models are text-only here)." });
     }
@@ -134,7 +135,7 @@ app.post("/api/analyze-design", async (req, res) => {
       return res.status(400).json({ error: "Missing images. Please upload one or more references." });
     }
 
-    const ai = getAI();
+    const ai = getAI(apiKey);
 
     // Prepare visual and text parts for the multimodel request
     const parts = images.map((img: string) => {
@@ -216,7 +217,7 @@ function sanitizeContents(historyList: any[]): any[] {
  */
 app.post("/api/generate-carousel", async (req, res) => {
   try {
-    const { topic, history, spec, count = 7, provider, ollamaModel } = req.body;
+    const { topic, history, spec, count = 7, provider, ollamaModel, apiKey } = req.body;
 
     // Perform clean, robust sanitization on history
     const contents = sanitizeContents(history || []);
@@ -264,6 +265,7 @@ ${spec ? `Adhere precisely to this Design DNA spec constraint: ${JSON.stringify(
     const aiOutput = await generateText({
       provider,
       ollamaModel,
+      apiKey,
       system: "You are an award-winning content marketer, social media copywriter, and digital slide deck architecture expert. Your goal is to deliver perfectly structured carousel config properties matching requested subjects.",
       schema,
       contents
@@ -281,8 +283,8 @@ ${spec ? `Adhere precisely to this Design DNA spec constraint: ${JSON.stringify(
  */
 app.post("/api/generate-image", async (req, res) => {
   try {
-    const { prompt, aspectRatio, vibe } = req.body;
-    const ai = getAI();
+    const { prompt, aspectRatio, vibe, apiKey } = req.body;
+    const ai = getAI(apiKey);
 
     // Mapping aspect ratio from standard slider sizes to supported gemini-2.5-flash-image ones
     const imageRatio = aspectRatio === "4:5" ? "3:4" : "1:1";

@@ -16,6 +16,7 @@ import * as htmlToImage from 'html-to-image';
 import { Button } from './src/components/CoreButton';
 import { SlidePreview } from './src/components/SlidePreview';
 import { ProjectExplorer } from './src/components/ProjectExplorer';
+import { SettingsModal } from './src/components/SettingsModal';
 
 export default function App() {
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -34,6 +35,7 @@ export default function App() {
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isPresenting, setIsPresenting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isArchitectFlow, setIsArchitectFlow] = useState(false);
   const [architectImages, setArchitectImages] = useState<string[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -191,6 +193,7 @@ export default function App() {
           onSelect={p => { setCurrentProject(p); setChatHistory(p.chatHistory || []); }}
           onDelete={id => setProjects(prev => prev.filter(p => p.id !== id))}
           onCreateNew={handleCreateNew}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
       ) : (
         <div className="flex h-screen w-full">
@@ -203,7 +206,10 @@ export default function App() {
              </div>
              <h1 className="text-xl font-black uppercase italic tracking-tighter">Forge</h1>
           </div>
-          <button onClick={() => setCurrentProject(null)} className="p-2 hover:bg-white/5 rounded-xl text-slate-500"><History size={18} /></button>
+          <div className="flex gap-1">
+             <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-white/5 rounded-xl text-slate-500"><Settings size={18} /></button>
+             <button onClick={() => setCurrentProject(null)} className="p-2 hover:bg-white/5 rounded-xl text-slate-500"><History size={18} /></button>
+          </div>
         </header>
 
         <nav className="flex-1 space-y-8">
@@ -496,6 +502,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
     </div>
   );
 }

@@ -4,11 +4,19 @@ import { CarouselConfig, Slide, ChatMessage, DesignSpec, DEFAULT_BRANDING, Groun
  * Service to interact with our backend AI Proxy
  */
 
+// Gemini API key entered in the app UI, persisted locally in the browser only.
+export const getApiKey = (): string => {
+  try { return localStorage.getItem("cf_gemini_key") || ""; } catch { return ""; }
+};
+export const setApiKey = (key: string) => {
+  try { key ? localStorage.setItem("cf_gemini_key", key) : localStorage.removeItem("cf_gemini_key"); } catch { /* noop */ }
+};
+
 export const analyzeDesignADN = async (images: string[]): Promise<DesignSpec> => {
   const response = await fetch("/api/analyze-design", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ images })
+    body: JSON.stringify({ images, apiKey: getApiKey() || undefined })
   });
 
   if (!response.ok) {
@@ -38,7 +46,7 @@ export const generateCarouselContent = async (
   const response = await fetch("/api/generate-carousel", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topic, history, spec, count: targetSlideCount, provider: currentProvider })
+    body: JSON.stringify({ topic, history, spec, count: targetSlideCount, provider: currentProvider, apiKey: getApiKey() || undefined })
   });
 
   if (!response.ok) {
@@ -79,7 +87,7 @@ export const generateSlideImage = async (prompt: string, aspectRatio: string, vi
   const response = await fetch("/api/generate-image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, aspectRatio, vibe })
+    body: JSON.stringify({ prompt, aspectRatio, vibe, apiKey: getApiKey() || undefined })
   });
 
   if (!response.ok) {
