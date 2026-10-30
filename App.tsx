@@ -8,7 +8,7 @@ import {
   ArrowRight, Layers, Palette, Type as TypeIcon, Link as LinkIcon, Globe
 } from 'lucide-react';
 import { CarouselConfig, Slide, GenerationState, LayoutType, TextAlign, ChatMessage, Project, DesignSpec, DEFAULT_BRANDING } from './types';
-import { generateCarouselContent, generateSlideImage, analyzeDesignADN } from './geminiService';
+import { generateCarouselContent, generateSlideImage, analyzeDesignADN, getProvider, setProvider as setProviderState, type LLMProvider } from './geminiService';
 import JSZip from 'jszip';
 import * as htmlToImage from 'html-to-image';
 
@@ -47,6 +47,11 @@ export default function App() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const exportRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [provider, setProviderUI] = useState<LLMProvider>(getProvider());
+  const setProviderLocal = (p: LLMProvider) => {
+    setProviderUI(p);
+    setProviderState(p);
+  };
 
   // Persistence
   useEffect(() => {
@@ -406,10 +411,20 @@ export default function App() {
                 </div>
                 <div>
                    <h2 className="text-2xl font-black italic tracking-tighter uppercase">{isArchitectFlow ? 'Architect Mode' : 'Instant Strategy'}</h2>
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Powered by Gemini WebJSON v4</p>
+                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Engine: {provider === 'ollama' ? 'Ollama Local' : 'Gemini Cloud'} v4</p>
                 </div>
               </div>
-              <button onClick={() => setIsAgentOpen(false)} className="p-3 bg-white/5 rounded-xl border border-white/10 hover:text-red-400 transition-colors"><X size={20} /></button>
+              <div className="flex items-center gap-3">
+                 <select
+                   className="bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-teal-400 outline-none cursor-pointer"
+                   value={provider}
+                   onChange={e => setProviderLocal(e.target.value as LLMProvider)}
+                 >
+                    <option value="gemini">Gemini (Cloud)</option>
+                    <option value="ollama">Ollama (Local)</option>
+                 </select>
+                 <button onClick={() => setIsAgentOpen(false)} className="p-3 bg-white/5 rounded-xl border border-white/10 hover:text-red-400 transition-colors"><X size={20} /></button>
+              </div>
             </header>
 
             <div className="flex-1 overflow-y-auto p-10 space-y-6">

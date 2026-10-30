@@ -8,6 +8,101 @@ app.use(express.json({ limit: "15mb" }));
 
 const PORT = 3000;
 
+// --- LLM Providers ---
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen2.5:3b";
+
+type Provider = "gemini" | "ollama";
+
+interface LLMRequest {
+  provider?: Provider;
+  ollamaModel?: string;
+  system?: string;
+  schema?: any;
+  contents: any[];
+}
+
+/** Compact human-readable JSON instruction from a Gemini-style schema (for local models). */
+function schemaToPrompt(schema: any): string {
+  const walk = (s: any): string => {
+    if (!s || !s.properties) return "";
+    const parts = Object.entries<any>(s.properties).map(([k, v]) => {
+      const t = String(v.type || "").toLowerCase();
+      if (t === "array") {
+        const item = v.items ? walk(v.items) : "";
+        return `${k}: [${item ? `{${item}}` : "value"}, ...]`;
+      }
+      return t === "object" ? `${k}: {${walk(v)}}` : `${k}: (string${v.description ? ` - ${v.description}` : ""})`;
+    });
+    return parts.join(", ");
+  };
+  return `Return ONLY valid JSON with exactly this shape (no markdown, no extra keys): {${walk(schema)}}. All required. Respect enum-like instructions inside descriptions.`;
+}
+
+/** Contents -> flat prompt text for local chat models. */
+function contentsToPrompt(contents: any[]): string {
+  return contents
+    .map((c) => {
+      const texts = (c.parts || [])
+        .map((p: any) => p.text || "")
+        .filter(Boolean)
+        .join("\n");
+      return `${c.role === "user" ? "User" : "Assistant"}: ${texts}`;
+    })
+    .join("\n\n");
+}
+
+/** Unified text generation: Gemini structured, or local Ollama with JSON output. */
+async function generateText({ provider = "gemini", ollamaModel, system, schema, contents }: LLMRequest): Promise<any> {
+  if (provider === "ollama") {
+    const messages: any[] = [];
+    if (system || schema) {
+      messages.push({
+        role: "system",
+        content: [system, schema ? schemaToPrompt(schema) : null].filter(Boolean).join("\n\n")
+      });
+    }
+    messages.push({ role: "user", content: contentsToPrompt(contents) });
+
+    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: ollamaModel || OLLAMA_MODEL,
+        messages,
+        stream: false,
+        format: "json",
+        options: { temperature: 0.9, num_ctx: 8192 }
+      })
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`Ollama error ${response.status}: ${detail.slice(0, 300)}`);
+    }
+
+    const data = await response.json();
+    const text = data?.message?.content;
+    if (!text) throw new Error("Ollama returned no content.");
+    return JSON.parse(text);
+  }
+
+  // Default: Gemini with native responseSchema
+  const ai = getAI();
+  const response = await ai.models.generateContent({
+    model: "gemini-3.5-flash",
+    contents,
+    config: {
+      systemInstruction: system,
+      responseMimeType: schema ? "application/json" : "text/plain",
+      responseSchema: schema
+    }
+  });
+  const text = response.text;
+  if (!text) throw new Error("No response output content was received from the model.");
+  return schema ? JSON.parse(text) : text;
+}
+
 // Gemini client initialization helper
 const getAI = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -31,7 +126,10 @@ const getAI = () => {
  */
 app.post("/api/analyze-design", async (req, res) => {
   try {
-    const { images } = req.body;
+    const { images, provider } = req.body;
+    if (provider === "ollama") {
+      return res.status(400).json({ error: "Design DNA analysis needs a vision model. Switch to Gemini for image analysis (Ollama local models are text-only here)." });
+    }
     if (!images || !Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ error: "Missing images. Please upload one or more references." });
     }
@@ -118,8 +216,7 @@ function sanitizeContents(historyList: any[]): any[] {
  */
 app.post("/api/generate-carousel", async (req, res) => {
   try {
-    const { topic, history, spec, count = 7 } = req.body;
-    const ai = getAI();
+    const { topic, history, spec, count = 7, provider, ollamaModel } = req.body;
 
     // Perform clean, robust sanitization on history
     const contents = sanitizeContents(history || []);
@@ -139,45 +236,40 @@ ${spec ? `Adhere precisely to this Design DNA spec constraint: ${JSON.stringify(
       });
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents,
-      config: {
-        systemInstruction: "You are an award-winning content marketer, social media copywriter, and digital slide deck architecture expert. Your goal is to deliver perfectly structured carousel config properties matching requested subjects.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING, description: "The viral catchy headline/concept for the whole carousel deck." },
-            accentColor: { type: Type.STRING, description: "Hex format brand primary accent color representing this deck concept." },
-            fontFamily: { type: Type.STRING, description: "The typography font name of choice. Choose from 'Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Bebas Neue'." },
-            aspectRatio: { type: Type.STRING, description: "Standard carousel ratio. Must be '1:1' (Square) or '4:5' (Portrait)." },
-            slides: {
-              type: Type.ARRAY,
-              description: `Slides list. Create exactly ${count} highly engaging slides of structured progressive messaging or steps.`,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  headline: { type: Type.STRING, description: "The main big bold statement for this slide. Wrap exactly ONE central word or visual punchline in curly braces {like this} to style with accent color (e.g., 'Learn {faster} today')." },
-                  body: { type: Type.STRING, description: "Supporting narrative or explanation that adds immediate actionable value. Wrap styled words in curly braces if needed." },
-                  visualPrompt: { type: Type.STRING, description: "Exquisite visual description prompt used for AI drawing background. Keep under 15 words." },
-                  layout: { type: Type.STRING, description: "The recommended background layout theme. Choose exactly from: 'center', 'bottom-left', 'split-vertical', 'minimal', 'bold-title'." }
-                },
-                required: ["headline", "body", "visualPrompt", "layout"]
-              }
-            }
-          },
-          required: ["title", "accentColor", "fontFamily", "aspectRatio", "slides"]
+    const schema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING, description: "The viral catchy headline/concept for the whole carousel deck." },
+        accentColor: { type: Type.STRING, description: "Hex format brand primary accent color representing this deck concept." },
+        fontFamily: { type: Type.STRING, description: "The typography font name of choice. Choose from 'Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Bebas Neue'." },
+        aspectRatio: { type: Type.STRING, description: "Standard carousel ratio. Must be '1:1' (Square) or '4:5' (Portrait)." },
+        slides: {
+          type: Type.ARRAY,
+          description: `Slides list. Create exactly ${count} highly engaging slides of structured progressive messaging or steps.`,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              headline: { type: Type.STRING, description: "The main big bold statement for this slide. Wrap exactly ONE central word or visual punchline in curly braces {like this} to style with accent color (e.g., 'Learn {faster} today')." },
+              body: { type: Type.STRING, description: "Supporting narrative or explanation that adds immediate actionable value. Wrap styled words in curly braces if needed." },
+              visualPrompt: { type: Type.STRING, description: "Exquisite visual description prompt used for AI drawing background. Keep under 15 words." },
+              layout: { type: Type.STRING, description: "The recommended background layout theme. Choose exactly from: 'center', 'bottom-left', 'split-vertical', 'minimal', 'bold-title'." }
+            },
+            required: ["headline", "body", "visualPrompt", "layout"]
+          }
         }
-      }
+      },
+      required: ["title", "accentColor", "fontFamily", "aspectRatio", "slides"]
+    };
+
+    const aiOutput = await generateText({
+      provider,
+      ollamaModel,
+      system: "You are an award-winning content marketer, social media copywriter, and digital slide deck architecture expert. Your goal is to deliver perfectly structured carousel config properties matching requested subjects.",
+      schema,
+      contents
     });
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("No response output content was received from the model.");
-    }
-
-    res.json(JSON.parse(text));
+    res.json(aiOutput);
   } catch (error: any) {
     console.error("Carousel generation failed:", error);
     res.status(500).json({ error: error.message || "Failed to generate carousel contents." });

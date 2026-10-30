@@ -20,6 +20,15 @@ export const analyzeDesignADN = async (images: string[]): Promise<DesignSpec> =>
   return { ...spec, id: `spec-${Date.now()}` };
 };
 
+export type LLMProvider = "gemini" | "ollama";
+let currentProvider: LLMProvider = (typeof localStorage !== "undefined" && localStorage.getItem("cf_provider") as LLMProvider) || "gemini";
+
+export const getProvider = () => currentProvider;
+export const setProvider = (p: LLMProvider) => {
+  currentProvider = p;
+  try { localStorage.setItem("cf_provider", p); } catch { /* noop */ }
+};
+
 export const generateCarouselContent = async (
   topic: string, 
   history: ChatMessage[] = [],
@@ -29,7 +38,7 @@ export const generateCarouselContent = async (
   const response = await fetch("/api/generate-carousel", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topic, history, spec, count: targetSlideCount })
+    body: JSON.stringify({ topic, history, spec, count: targetSlideCount, provider: currentProvider })
   });
 
   if (!response.ok) {
@@ -40,11 +49,13 @@ export const generateCarouselContent = async (
   const aiOutput = await response.json();
   
   // Post-process the AI output into a CarouselConfig
+  const LAYOUTS = ['center', 'bottom-left', 'split-vertical', 'minimal', 'bold-title'];
+  const FONTS = ['Outfit', 'Plus Jakarta Sans', 'Space Grotesk', 'Inter', 'Bebas Neue'];
   const config: CarouselConfig = {
     id: `project-${Date.now()}`,
     title: aiOutput.title || topic,
     accentColor: aiOutput.accentColor || spec?.accentColor || "#2dd4bf",
-    fontFamily: aiOutput.fontFamily || spec?.fontFamily || "Outfit",
+    fontFamily: FONTS.includes(aiOutput.fontFamily) ? aiOutput.fontFamily : (spec?.fontFamily || "Outfit"),
     aspectRatio: (aiOutput.aspectRatio as '1:1' | '4:5') || '4:5',
     theme: 'dark',
     branding: DEFAULT_BRANDING,
@@ -52,6 +63,7 @@ export const generateCarouselContent = async (
     slides: (aiOutput.slides || []).map((s: any, idx: number) => ({ 
       ...s, 
       id: `slide-${idx}-${Date.now()}`,
+      layout: LAYOUTS.includes(s.layout) ? s.layout : 'center',
       overlayOpacity: spec?.overlayOpacity ?? 0.8,
       headlineSize: spec?.headlineSize ?? 60,
       bodySize: spec?.bodySize ?? 20,
