@@ -53,55 +53,87 @@ function contentsToPrompt(contents: any[]): string {
     .join("\n\n");
 }
 
-/** Unified text generation: Gemini structured, or local Ollama with JSON output. */
-async function generateText({ provider = "gemini", ollamaModel, system, schema, apiKey, contents }: LLMRequest): Promise<any> {
-  if (provider === "ollama") {
-    const messages: any[] = [];
-    if (system || schema) {
-      messages.push({
-        role: "system",
-        content: [system, schema ? schemaToPrompt(schema) : null].filter(Boolean).join("\n\n")
-      });
-    }
-    messages.push({ role: "user", content: contentsToPrompt(contents) });
-
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: ollamaModel || OLLAMA_MODEL,
-        messages,
-        stream: false,
-        format: "json",
-        options: { temperature: 0.9, num_ctx: 8192 }
-      })
+/** Local Ollama generation with JSON output. */
+async function ollamaGenerate({ ollamaModel, system, schema, contents }: LLMRequest): Promise<any> {
+  const messages: any[] = [];
+  if (system || schema) {
+    messages.push({
+      role: "system",
+      content: [system, schema ? schemaToPrompt(schema) : null].filter(Boolean).join("\n\n")
     });
+  }
+  messages.push({ role: "user", content: contentsToPrompt(contents) });
 
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(`Ollama error ${response.status}: ${detail.slice(0, 300)}`);
-    }
+  const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: ollamaModel || OLLAMA_MODEL,
+      messages,
+      stream: false,
+      format: "json",
+      options: { temperature: 0.9, num_ctx: 8192 }
+    })
+  });
 
-    const data = await response.json();
-    const text = data?.message?.content;
-    if (!text) throw new Error("Ollama returned no content.");
-    return JSON.parse(text);
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Ollama error ${response.status}: ${detail.slice(0, 300)}`);
   }
 
-  // Default: Gemini with native responseSchema
-  const ai = getAI(apiKey);
-  const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash",
-    contents,
-    config: {
-      systemInstruction: system,
-      responseMimeType: schema ? "application/json" : "text/plain",
-      responseSchema: schema
+  const data = await response.json();
+  const text = data?.message?.content;
+  if (!text) throw new Error("Ollama returned no content.");
+  return JSON.parse(text);
+}
+
+/** Unified text generation: Gemini with retry, then fallback to local Ollama. */
+async function generateText({ provider = "gemini", ollamaModel, system, schema, apiKey, contents }: LLMRequest): Promise<any> {
+  if (provider === "ollama") {
+    return ollamaGenerate({ ollamaModel, system, schema, contents });
+  }
+
+  // Default: Gemini with native responseSchema, retried on transient 429/503 overload
+  const callGemini = async () => {
+    const ai = getAI(apiKey);
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents,
+      config: {
+        systemInstruction: system,
+        responseMimeType: schema ? "application/json" : "text/plain",
+        responseSchema: schema
+      }
+    });
+    const text = response.text;
+    if (!text) throw new Error("No response output content was received from the model.");
+    return schema ? JSON.parse(text) : text;
+  };
+
+  const delays = [2000, 6000, 12000];
+  let lastError: any;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      return await callGemini();
+    } catch (e: any) {
+      lastError = e;
+      const transient = [429, 500, 503].includes(e?.status) || /429|503|UNAVAILABLE|overload|high demand/i.test(e?.message || "");
+      if (!transient) break;
+      console.warn(`Gemini transient failure (attempt ${attempt + 1}), retrying:`, e?.message);
+      if (attempt < delays.length) await new Promise(r => setTimeout(r, delays[attempt]));
     }
-  });
-  const text = response.text;
-  if (!text) throw new Error("No response output content was received from the model.");
-  return schema ? JSON.parse(text) : text;
+  }
+
+  // Fallback: local Ollama, so the app keeps working when the cloud model is down
+  if (process.env.OLLAMA_FALLBACK !== "0") {
+    console.warn("Gemini unavailable after retries, falling back to local Ollama.");
+    try {
+      return await ollamaGenerate({ ollamaModel, system, schema, contents });
+    } catch (e: any) {
+      console.error("Ollama fallback also failed:", e?.message);
+    }
+  }
+  throw lastError;
 }
 
 // Gemini client initialization helper
