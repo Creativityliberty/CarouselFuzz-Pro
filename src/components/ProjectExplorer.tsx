@@ -13,7 +13,7 @@ interface ProjectExplorerProps {
 
 export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ projects, onSelect, onDelete, onCreateNew, onOpenSettings }) => {
   return (
-    <div className="flex-1 min-h-screen p-10 md:p-20 flex flex-col overflow-y-auto bg-slate-950 relative overflow-hidden">
+    <div className="flex-1 min-h-screen p-10 md:p-20 flex flex-col overflow-y-auto bg-slate-950 relative">
       <div className="orb w-[500px] h-[500px] bg-teal-500/15 -top-40 -left-40" />
       <div className="orb w-[400px] h-[400px] bg-indigo-500/10 top-1/3 right-0" style={{ animationDelay: "-7s" }} />
       <header className="flex flex-col md:flex-row items-center justify-between mb-20 gap-8">

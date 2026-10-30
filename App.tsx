@@ -162,10 +162,23 @@ export default function App() {
     }
   };
 
+  const [applyAll, setApplyAll] = useState(false);
+
   const updateSlide = (updates: Partial<Slide>) => {
     if (!currentProject) return;
-    const slides = [...currentProject.config.slides];
-    slides[currentIdx] = { ...slides[currentIdx], ...updates };
+    // Design & structure changes can propagate to every slide ("Apply to all")
+    const DESIGN_KEYS = ['headlineSize', 'bodySize', 'contentPadding', 'layout', 'visualPrompt'];
+    const slides = [...currentProject.config.slides].map((s, i) => {
+      if (i === currentIdx) return { ...s, ...updates };
+      if (applyAll) {
+        const scoped: Partial<Slide> = {};
+        Object.keys(updates).forEach(k => {
+          if (DESIGN_KEYS.includes(k)) (scoped as any)[k] = (updates as any)[k];
+        });
+        return { ...s, ...scoped };
+      }
+      return s;
+    });
     setCurrentProject({ ...currentProject, config: { ...currentProject.config, slides } });
   };
 
@@ -286,6 +299,15 @@ export default function App() {
                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-2">
                     <Palette size={14} /> Design Specs
                  </h3>
+                 <button
+                   onClick={() => setApplyAll(p => !p)}
+                   className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${applyAll ? 'border-teal-500 bg-teal-500/10' : 'border-white/10 bg-white/5'}`}
+                 >
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${applyAll ? 'text-teal-400' : 'text-slate-400'}`}>Apply to all slides</span>
+                    <span className={`w-10 h-5 rounded-full relative transition-all ${applyAll ? 'bg-teal-500' : 'bg-slate-700'}`}>
+                       <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${applyAll ? 'left-5' : 'left-0.5'}`} />
+                    </span>
+                 </button>
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Accent</label>
