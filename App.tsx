@@ -95,6 +95,31 @@ export default function App() {
     localStorage.setItem('carouselfuzz_projects', JSON.stringify(projects));
   }, [projects]);
 
+  // Synchronisation avec les projets créés via API / MCP
+  useEffect(() => {
+    const fetchServerProjects = async () => {
+      try {
+        const res = await fetch('/api/projects');
+        if (res.ok) {
+          const serverProjects = await res.json();
+          if (Array.isArray(serverProjects) && serverProjects.length > 0) {
+            setProjects(prev => {
+              const existingIds = new Set(prev.map(p => p.id));
+              const newOnes = serverProjects.filter((sp: any) => !existingIds.has(sp.id));
+              if (newOnes.length > 0) {
+                return [...newOnes, ...prev];
+              }
+              return prev;
+            });
+          }
+        }
+      } catch {
+        // Mode offline
+      }
+    };
+    fetchServerProjects();
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('cf_brand_profiles', JSON.stringify(profiles));
   }, [profiles]);

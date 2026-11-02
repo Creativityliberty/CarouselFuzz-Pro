@@ -55,23 +55,34 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, config, expor
   );
 
   const renderRichText = (text: string, color: string, underline: boolean = false) => {
-    return text.split('{').map((part, i) => {
-      if (part.includes('}')) {
-        const [highlight, rest] = part.split('}');
-        return (
-          <React.Fragment key={i}>
-            <span 
-              style={{ color }} 
-              className={underline ? "underline decoration-current underline-offset-8" : "font-extrabold"}
-            >
-              {highlight}
-            </span>
-            {rest}
-          </React.Fragment>
-        );
-      }
-      return part;
-    });
+    // Rendu avec support du saut de ligne propre (\n ou \n\n)
+    const renderParagraph = (paragraph: string, keyPrefix: string) => {
+      return paragraph.split('{').map((part, i) => {
+        if (part.includes('}')) {
+          const [highlight, rest] = part.split('}');
+          return (
+            <React.Fragment key={`${keyPrefix}-${i}`}>
+              <span 
+                style={{ color }} 
+                className={underline ? "underline decoration-current underline-offset-8" : "font-extrabold"}
+              >
+                {highlight}
+              </span>
+              {rest}
+            </React.Fragment>
+          );
+        }
+        return part;
+      });
+    };
+
+    const paragraphs = text.split('\n');
+    return paragraphs.map((p, pIdx) => (
+      <React.Fragment key={pIdx}>
+        {renderParagraph(p, `p-${pIdx}`)}
+        {pIdx < paragraphs.length - 1 && <br className="my-1.5" />}
+      </React.Fragment>
+    ));
   };
 
   // Par défaut le slide est en mode CLAIR BLANC (Soft UI Iconly) sauf si l'utilisateur a explicitement choisi 'midnight-glass'
@@ -227,19 +238,31 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, config, expor
       )}
 
       {/* MAIN CONTENT AREA */}
-      <div className="absolute inset-0 flex flex-col justify-center z-20" style={{ padding: `${padding}px` }}>
+      <div 
+        className="absolute inset-0 flex flex-col justify-center z-20 pt-20 pb-16 overflow-hidden" 
+        style={{ paddingLeft: `${padding}px`, paddingRight: `${padding}px` }}
+      >
         
         {/* LAYOUT: COMPARISON (DO VS DON'T) - Compatible Clair & Sombre */}
         {slide.layout === 'comparison' ? (
-          <div className="flex flex-col h-full justify-center space-y-5 pt-12">
+          <div className="flex flex-col h-full justify-center space-y-4 pt-4">
             <h1 
-              className={`font-black leading-[1.1] tracking-tight uppercase ${isLightSlide ? 'text-slate-900' : 'text-white drop-shadow-md'}`}
-              style={{ fontSize: `${headlineSize * 0.78}px`, textAlign }}
+              className={`font-black leading-[1.15] tracking-tight uppercase ${isLightSlide ? 'text-slate-900' : 'text-white drop-shadow-md'}`}
+              style={{ fontSize: `${headlineSize * 0.72}px`, textAlign }}
             >
               {renderRichText(slide.headline || "", accent)}
             </h1>
 
-            <div className="grid grid-cols-1 gap-4 w-full">
+            {slide.body && (
+              <p 
+                className={`font-medium leading-relaxed text-xs md:text-sm -mt-1 ${isLightSlide ? 'text-slate-500' : 'text-slate-300'}`}
+                style={{ textAlign }}
+              >
+                {renderRichText(slide.body, accent)}
+              </p>
+            )}
+
+            <div className="grid grid-cols-1 gap-3.5 w-full">
               {/* DONT CARD */}
               <div 
                 className={`rounded-[1.6rem] border p-5 flex items-start gap-4 transition-colors ${
@@ -410,30 +433,30 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, config, expor
           </div>
         ) : slide.layout === 'soft-ui-card' ? (
           /* LAYOUT SIGNATURE ICONLY SOFT UI CLEAN (Carte Blanche Tactile, Dropzone Pointillée, Bulle Bleue, Boutons Pillules) */
-          <div className="flex flex-col h-full justify-center pt-10">
-            <div className="rounded-[2.4rem] bg-white/95 backdrop-blur-2xl border-2 border-white p-6 md:p-7 shadow-[0_24px_50px_-12px_rgba(15,23,42,0.10),inset_0_2px_4px_rgba(255,255,255,1)] space-y-4 relative overflow-hidden">
+          <div className="flex flex-col h-full justify-center pt-2">
+            <div className="rounded-[2.2rem] bg-white/95 backdrop-blur-2xl border-2 border-white p-5 md:p-6 shadow-[0_24px_50px_-12px_rgba(15,23,42,0.10),inset_0_2px_4px_rgba(255,255,255,1)] space-y-3.5 relative overflow-hidden">
               
               {/* Top dashed container (Dropzone Iconly) */}
-              <div className="rounded-[1.8rem] border-2 border-dashed border-slate-200/90 bg-[#f8fafc] p-5 flex flex-col items-center text-center space-y-3">
+              <div className="rounded-[1.6rem] border-2 border-dashed border-slate-200/90 bg-[#f8fafc] p-4 flex flex-col items-center text-center space-y-2.5">
                 {/* Tactile Soft Orb Icon */}
                 <div 
-                  className="w-16 h-16 rounded-full flex items-center justify-center shadow-[0_14px_28px_-6px_rgba(37,99,235,0.28),inset_0_2px_6px_rgba(255,255,255,1)] border-2 border-white"
+                  className="w-12 h-12 rounded-full flex items-center justify-center shadow-[0_12px_24px_-4px_rgba(37,99,235,0.28),inset_0_2px_6px_rgba(255,255,255,1)] border-2 border-white shrink-0"
                   style={{ background: `radial-gradient(circle at 30% 30%, #ffffff, ${accent}30)` }}
                 >
-                  <Upload size={24} style={{ color: accent }} />
+                  <Upload size={20} style={{ color: accent }} />
                 </div>
 
                 <h1 
-                  className="font-extrabold leading-[1.14] tracking-tight text-slate-900" 
-                  style={{ fontSize: `${headlineSize * 0.62}px` }}
+                  className="font-extrabold leading-[1.15] tracking-tight text-slate-900" 
+                  style={{ fontSize: `${headlineSize * 0.60}px` }}
                 >
                   {renderRichText(slide.headline || "", accent)}
                 </h1>
               </div>
 
               {/* Inner Sleek Row Card (façon Class meeting row) */}
-              <div className="rounded-[1.5rem] bg-[#f8fafc] border border-slate-200/70 p-4 shadow-sm space-y-3">
-                <p className="text-slate-600 font-medium leading-relaxed" style={{ fontSize: `${bodySize * 0.92}px`, textAlign }}>
+              <div className="rounded-[1.4rem] bg-[#f8fafc] border border-slate-200/70 p-3.5 shadow-sm space-y-2.5">
+                <p className="text-slate-600 font-medium leading-relaxed font-mono text-[11px] md:text-xs" style={{ textAlign }}>
                   {renderRichText(slide.body || "", accent)}
                 </p>
                 {/* Progress bar pill */}
@@ -446,12 +469,12 @@ export const SlidePreview: React.FC<SlidePreviewProps> = ({ slide, config, expor
               </div>
 
               {/* Dual Soft Pill Buttons */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="py-2.5 px-4 rounded-full bg-[#f1f5f9] border border-slate-200/80 text-slate-800 font-bold text-xs text-center shadow-sm">
+              <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                <div className="py-2 px-3 rounded-full bg-[#f1f5f9] border border-slate-200/80 text-slate-800 font-bold text-[11px] text-center shadow-sm">
                   {branding.companyName || "Studio"}
                 </div>
                 <div 
-                  className="py-2.5 px-4 rounded-full text-white font-bold text-xs text-center shadow-[0_10px_22px_-5px_rgba(29,78,216,0.45)]"
+                  className="py-2 px-3 rounded-full text-white font-bold text-[11px] text-center shadow-[0_10px_22px_-5px_rgba(29,78,216,0.45)]"
                   style={{ backgroundColor: accent }}
                 >
                   {isLastSlide ? "Terminer" : "Continuer →"}

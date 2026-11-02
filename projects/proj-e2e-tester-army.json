@@ -1,0 +1,85 @@
+{
+  "id": "proj-e2e-tester-army",
+  "name": "tester-army/e2e — Le Futur des Tests E2E",
+  "date": "2026-11-02T21:15:00.000Z",
+  "config": {
+    "title": "tester-army/e2e — Le Futur des Tests E2E",
+    "themeMode": "light",
+    "accentColor": "#2563eb",
+    "fontFamily": "Plus Jakarta Sans",
+    "aspectRatio": "4:5",
+    "branding": {
+      "companyName": "TesterArmy Review",
+      "companyWebsite": "e2e.tester.army",
+      "showBranding": true,
+      "displayMode": "all",
+      "handle": "@testerarmy",
+      "authorRole": "Dev & QA Insights"
+    },
+    "slides": [
+      {
+        "id": "slide-1",
+        "badgeText": "12 600 ⭐ SUR GITHUB",
+        "headline": "Playwright est-il déjà {dépassé} ?",
+        "body": "Découvrez tester-army/e2e : le premier framework d'automatisation où les tests s'écrivent en langage naturel.\n\nDes agents IA pilotent l'application et valident chaque parcours utilisateur sans scripts rigides.",
+        "imageUri": "/uploads/1793654082011-1h7bso7.png",
+        "layout": "bold-title",
+        "overlayOpacity": 0.85,
+        "headlineSize": 52,
+        "bodySize": 20,
+        "textAlign": "left",
+        "contentPadding": 48
+      },
+      {
+        "id": "slide-2",
+        "badgeText": "LE CONSTAT",
+        "headline": "Les tests traditionnels sont un {enfer}",
+        "body": "La maintenance des tests Web & Mobile coûte des centaines d'heures chaque mois.",
+        "layout": "comparison",
+        "comparisonDo": "Framework e2e :\nVous décrivez l'action en anglais simple, l'agent trouve les éléments et s'adapte aux changements.",
+        "comparisonDont": "Playwright / Cypress classique :\n40 lignes de sélecteurs CSS & XPath qui cassent au premier redesign.",
+        "overlayOpacity": 0.85,
+        "headlineSize": 38,
+        "bodySize": 16,
+        "textAlign": "left",
+        "contentPadding": 44
+      },
+      {
+        "id": "slide-3",
+        "badgeText": "CODE RÉVOLUTION",
+        "headline": "Comment ça s'écrit en {3 lignes}",
+        "body": "test('Upgrade Pro', async ({ app, agent }) => {\n  await app.open('/settings/billing');\n  await agent.act('upgrade workspace to Pro');\n  await agent.assert('invoice is prorated');\n});",
+        "layout": "soft-ui-card",
+        "overlayOpacity": 0.85,
+        "headlineSize": 38,
+        "bodySize": 16,
+        "textAlign": "left",
+        "contentPadding": 44
+      },
+      {
+        "id": "slide-4",
+        "badgeText": "MULTI-PLATEFORME",
+        "headline": "Un seul moteur pour {Web & Mobile}",
+        "body": "🌐 Web : Chromium, Firefox, WebKit (Playwright)\n\n📱 Mobile : Simulateurs iOS & Émulateurs Android\n\n⚡ Intégrations : Claude Code, Cursor, Next.js, Flutter, Expo\n\n🛡️ Open-Source : Licence Apache-2.0, modèles locaux ou cloud.",
+        "layout": "card-glass",
+        "overlayOpacity": 0.85,
+        "headlineSize": 40,
+        "bodySize": 18,
+        "textAlign": "left",
+        "contentPadding": 44
+      },
+      {
+        "id": "slide-5",
+        "badgeText": "TESTEZ EN 1 MINUTE",
+        "headline": "Prêt à tester le futur du {QA moderne} ?",
+        "body": "Pour installer et tester dans votre projet :\n\n$ npx e2e init\n\n📌 Enregistrez ce carrousel pour votre équipe dev !",
+        "layout": "news-flash",
+        "overlayOpacity": 0.85,
+        "headlineSize": 44,
+        "bodySize": 20,
+        "textAlign": "center",
+        "contentPadding": 48
+      }
+    ]
+  }
+}

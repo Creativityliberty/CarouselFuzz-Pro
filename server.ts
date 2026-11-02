@@ -1,12 +1,34 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
+import multer from "multer";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 
 const app = express();
-app.use(express.json({ limit: "15mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-const PORT = 3000;
+const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+const PROJECTS_DIR = path.join(process.cwd(), "projects");
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(PROJECTS_DIR)) fs.mkdirSync(PROJECTS_DIR, { recursive: true });
+
+// Static uploads serving
+app.use("/uploads", express.static(UPLOADS_DIR));
+
+// Multer storage
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".png";
+    const name = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
+    cb(null, name);
+  },
+});
+const upload = multer({ storage });
+
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 // --- LLM Providers ---
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
@@ -436,6 +458,90 @@ app.post("/api/generate-image", async (req, res) => {
   } catch (error: any) {
     console.error("AI Slide Image draw failed:", error);
     res.json({ imageUri: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop" });
+  }
+});
+
+// --- Upload Image Endpoints ---
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "Aucun fichier fourni" });
+  }
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ url: fileUrl, filename: req.file.filename });
+});
+
+app.post("/api/upload-url", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "URL manquante" });
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Échec téléchargement : ${response.status}`);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const ext = path.extname(new URL(url).pathname) || ".png";
+    const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
+    const filePath = path.join(UPLOADS_DIR, filename);
+    fs.writeFileSync(filePath, buffer);
+    res.json({ url: `/uploads/${filename}`, filename });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Erreur upload URL" });
+  }
+});
+
+app.get("/api/uploads", (_req, res) => {
+  try {
+    const files = fs.readdirSync(UPLOADS_DIR).filter(f => !f.startsWith("."));
+    const list = files.map(filename => ({
+      filename,
+      url: `/uploads/${filename}`,
+    }));
+    res.json(list);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message });
+  }
+});
+
+// --- Project Persistence Endpoints ---
+app.get("/api/projects", (_req, res) => {
+  try {
+    const files = fs.readdirSync(PROJECTS_DIR).filter(f => f.endsWith(".json"));
+    const projects = files.map(file => {
+      try {
+        const content = fs.readFileSync(path.join(PROJECTS_DIR, file), "utf-8");
+        return JSON.parse(content);
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+    res.json(projects);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message });
+  }
+});
+
+app.post("/api/projects", (req, res) => {
+  try {
+    const project = req.body;
+    if (!project || !project.id) {
+      return res.status(400).json({ error: "Projet ou id manquant" });
+    }
+    const filePath = path.join(PROJECTS_DIR, `${project.id}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(project, null, 2));
+    res.json({ success: true, project });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message });
+  }
+});
+
+app.get("/api/projects/:id", (req, res) => {
+  try {
+    const filePath = path.join(PROJECTS_DIR, `${req.params.id}.json`);
+    if (!fs.existsSync(filePath)) {
+      return res.status(400).json({ error: "Projet introuvable" });
+    }
+    const content = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    res.json(content);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message });
   }
 });
 
